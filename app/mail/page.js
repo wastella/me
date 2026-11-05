@@ -5,13 +5,14 @@ import { useApp } from '@/components/AppProvider';
 import ConnectGoogle from '@/components/ConnectGoogle';
 import { api, useApi, relTime } from '@/lib/client';
 import { todayStr } from '@/lib/dates';
+import { todayQuery } from '@/lib/mailq';
 import { IconArchive, IconStar, IconExt, IconMailUnread, IconTask, IconRefresh } from '@/components/Icons';
 
+// Me is for what's new; older mail lives in Gmail.
 const FOLDERS = [
-  { key: 'inbox', label: 'Inbox', q: 'in:inbox' },
-  { key: 'unread', label: 'Unread', q: 'in:inbox is:unread' },
-  { key: 'important', label: 'Important', q: 'in:inbox is:important' },
-  { key: 'starred', label: 'Starred', q: 'is:starred' },
+  { key: 'today', label: 'Today', q: () => todayQuery() },
+  { key: 'unread', label: 'Unread', q: () => 'in:inbox is:unread newer_than:7d' },
+  { key: 'starred', label: 'Starred', q: () => 'is:starred' },
 ];
 
 export default function Page() { return <Suspense fallback={null}><Mail /></Suspense>; }
@@ -21,9 +22,9 @@ function Mail() {
   const connected = status?.google?.connected;
   const params = useSearchParams();
   const router = useRouter();
-  const [folder, setFolder] = useState('inbox');
+  const [folder, setFolder] = useState('today');
   const [search, setSearch] = useState('');
-  const [q, setQ] = useState('in:inbox');
+  const [q, setQ] = useState(() => todayQuery());
   const list = useApi(connected ? `/api/mail?q=${encodeURIComponent(q)}&max=40` : null, { refreshMs: 2 * 60_000 });
   const [extra, setExtra] = useState({ messages: [], next: null });
   const selId = params.get('id');
@@ -53,10 +54,10 @@ function Mail() {
   return (
     <>
       <div className="page-head">
-        <div><h1>Mail</h1><div className="sub">{status?.google?.email}{list.data ? ` · ${list.data.unread} unread in inbox` : ''}</div></div>
+        <div><h1>Mail</h1><div className="sub">{folder === 'today' && !search ? (list.data ? `${messages.length}${nextToken ? '+' : ''} new today` : '') : status?.google?.email}</div></div>
         <div className="row">
           <div className="tabs">
-            {FOLDERS.map((f) => <button key={f.key} className={folder === f.key && !search ? 'on' : ''} onClick={() => { setFolder(f.key); setSearch(''); setQ(f.q); }}>{f.label}</button>)}
+            {FOLDERS.map((f) => <button key={f.key} className={folder === f.key && !search ? 'on' : ''} onClick={() => { setFolder(f.key); setSearch(''); setQ(f.q()); }}>{f.label}</button>)}
           </div>
           <form onSubmit={(e) => { e.preventDefault(); if (search.trim()) setQ(search.trim()); }}>
             <input className="input" style={{ width: 220 }} placeholder="Search mail" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -67,7 +68,7 @@ function Mail() {
       {list.error && <div className="error-box" style={{ marginBottom: 12 }}>{list.error.message}</div>}
       <div className="mail-layout">
         <div className="card mail-list">
-          {!list.data ? <div className="empty"><span className="spin" /></div> : messages.length === 0 ? <div className="empty"><div className="big">📭</div>Nothing here.</div> : (
+          {!list.data ? <div className="empty"><span className="spin" /></div> : messages.length === 0 ? <div className="empty">{folder === 'today' && !search ? 'No new email today.' : 'Nothing here.'}<div style={{ marginTop: 10 }}><a className="btn ghost" href="https://mail.google.com/mail/u/0/#inbox" target="_blank" rel="noreferrer">Open Gmail</a></div></div> : (
             <>
               {messages.map((m) => (
                 <div key={m.id} className={`mail-item ${m.unread ? 'unread' : ''} ${selId === m.id ? 'sel' : ''}`} onClick={() => select(m.id)}>

@@ -4,8 +4,8 @@ import { useApp } from './AppProvider';
 import { quickAdd } from '@/lib/quickadd';
 import { humanDate, humanTime } from '@/lib/dates';
 
-export default function QuickAdd({ defaults = {}, placeholder = 'Add a task — try “Call mom tomorrow 5pm p1 #Inbox”', autoFocus, hotkey = true }) {
-  const { addTask, projects, labels, projectById } = useApp();
+export default function QuickAdd({ defaults = {}, placeholder = 'Add a task — e.g. “Read ch. 3 tomorrow 5pm p1 #CS”', autoFocus, hotkey = true }) {
+  const { addTask, projects, projectById } = useApp();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const ref = useRef();
@@ -21,7 +21,7 @@ export default function QuickAdd({ defaults = {}, placeholder = 'Add a task — 
     return () => window.removeEventListener('keydown', onKey);
   }, [hotkey]);
 
-  const preview = useMemo(() => (text.trim() ? quickAdd(text, { projects, labels }) : null), [text, projects, labels]);
+  const preview = useMemo(() => (text.trim() ? quickAdd(text, { projects }) : null), [text, projects]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -44,11 +44,10 @@ export default function QuickAdd({ defaults = {}, placeholder = 'Add a task — 
       </div>
       {preview && (
         <div className="qa-preview">
-          {preview.due_date && <span className="chip date">📅 {humanDate(preview.due_date)}{preview.due_time ? ` ${humanTime(preview.due_time)}` : ''}{preview.recurring ? ' · repeats' : ''}</span>}
+          {preview.due_date && <span className="chip date">{humanDate(preview.due_date)}{preview.due_time ? ` ${humanTime(preview.due_time)}` : ''}{preview.recurring ? ' · repeats' : ''}</span>}
           {preview.priority < 4 && <span className="chip" style={{ color: `var(--p${preview.priority})` }}>P{preview.priority}</span>}
           {preview.project_id && <span className="chip"># {projectById[preview.project_id]?.name}</span>}
           {preview.newProject && <span className="chip"># {preview.newProject} (new)</span>}
-          {preview.labels.map((l) => <span className="chip" key={l}>@{l}</span>)}
         </div>
       )}
     </form>

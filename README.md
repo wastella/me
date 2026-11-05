@@ -32,8 +32,8 @@ Permissions requested: calendar read/write, and Gmail read, label and archive. M
 
 ## Todoist
 
-Everything was imported on 2026-11-04: projects, sections, labels, open tasks, recurring rules and two years of completed history. You can run **Settings → Re-import** again at any time. It updates the imported tasks rather than duplicating them. Once you've moved over, it's best to stop adding tasks in Todoist.
+Everything was imported from Todoist on 2026-11-04 (projects, recurring rules and two years of completed history). Labels were merged into projects, and Inbox became **Misc**.
 
 ## Quick add
 
-Press **Q** anywhere. For example: `Call mom tomorrow 5pm p1 #Inbox @phone`, or `Stretch every day at 7am`, or `Pay rent every 1st`, or `Haircut every! 6 weeks` (the `!` repeats from the day you complete it).
+Press **Q** anywhere. For example: `Call mom tomorrow 5pm p1 #Misc`, or `Stretch every day at 7am`, or `Pay rent every 1st`, or `Haircut every! 6 weeks` (the `!` repeats from the day you complete it).

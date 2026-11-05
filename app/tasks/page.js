@@ -14,10 +14,9 @@ export default function Page() {
 
 function Tasks() {
   const app = useApp();
-  const { tasks, projects, labels, sections, projectById } = app;
+  const { tasks, projects, sections, projectById } = app;
   const params = useSearchParams();
   const router = useRouter();
-  const inbox = projects.find((p) => p.is_inbox);
   const view = params.get('view') || 'today';
   const go = (v) => router.push(`/tasks?view=${encodeURIComponent(v)}`);
   const today = todayStr();
@@ -27,7 +26,6 @@ function Tasks() {
     for (const t of tasks) {
       if (t.due_date && t.due_date <= today) c.today++;
       c['p:' + t.project_id] = (c['p:' + t.project_id] || 0) + 1;
-      for (const l of t.labels) c['l:' + l] = (c['l:' + l] || 0) + 1;
     }
     return c;
   }, [tasks, today]);
@@ -46,12 +44,12 @@ function Tasks() {
     );
   } else if (view === 'upcoming') {
     title = 'Upcoming';
-    const days = Array.from({ length: 14 }, (_, i) => addDays(today, i));
+    const days = Array.from({ length: 14 }, (_, i) => addDays(today, i + 1));
     const later = tasks.filter((t) => t.due_date && t.due_date > days[days.length - 1]).sort(sortTasks);
     body = (
       <>
         {days.map((d) => {
-          const list = tasks.filter((t) => t.due_date === d || (d === today && t.due_date < today)).sort(sortTasks);
+          const list = tasks.filter((t) => t.due_date === d).sort(sortTasks);
           return (
             <div key={d}>
               <div className="group-title">{humanDate(d)} <span className="count">{parse(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{list.length ? ` · ${list.length}` : ''}</span></div>
@@ -87,10 +85,6 @@ function Tasks() {
         {p && !p.is_inbox && <ProjectTools project={p} onDeleted={() => go('today')} />}
       </>
     );
-  } else if (view.startsWith('l:')) {
-    const l = view.slice(2);
-    title = `@${l}`;
-    body = <TaskList tasks={tasks.filter((t) => t.labels.includes(l)).sort(sortTasks)} allTasks={tasks} empty="No tasks with this label." />;
   } else if (view === 'done') {
     title = 'Completed';
     body = <History />;
@@ -99,20 +93,13 @@ function Tasks() {
   return (
     <div className="tasks-layout">
       <aside className="views">
-        <ViewBtn on={view === 'today'} onClick={() => go('today')} n={counts.today}>☀️ Today</ViewBtn>
-        <ViewBtn on={view === 'upcoming'} onClick={() => go('upcoming')}>📅 Upcoming</ViewBtn>
-        {inbox && <ViewBtn on={view === 'p:' + inbox.id} onClick={() => go('p:' + inbox.id)} n={counts['p:' + inbox.id]}>📥 Inbox</ViewBtn>}
-        <ViewBtn on={view === 'done'} onClick={() => go('done')}>✅ Completed</ViewBtn>
+        <ViewBtn on={view === 'today'} onClick={() => go('today')} n={counts.today}>Today</ViewBtn>
+        <ViewBtn on={view === 'upcoming'} onClick={() => go('upcoming')}>Upcoming</ViewBtn>
+        <ViewBtn on={view === 'done'} onClick={() => go('done')}>Completed</ViewBtn>
         <div className="label">Projects <NewProject onCreated={(p) => { app.reloadTasks(); go('p:' + p.id); }} /></div>
-        {projects.filter((p) => !p.is_inbox).map((p) => (
+        {projects.map((p) => (
           <ViewBtn key={p.id} on={view === 'p:' + p.id} onClick={() => go('p:' + p.id)} n={counts['p:' + p.id]}>
             <i style={{ background: colorHex(p.color) }} />{p.name}
-          </ViewBtn>
-        ))}
-        {labels.length > 0 && <div className="label">Labels</div>}
-        {labels.filter((l) => counts['l:' + l.name]).map((l) => (
-          <ViewBtn key={l.id} on={view === 'l:' + l.name} onClick={() => go('l:' + l.name)} n={counts['l:' + l.name]}>
-            <span style={{ color: colorHex(l.color) }}>@</span>{l.name}
           </ViewBtn>
         ))}
       </aside>

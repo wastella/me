@@ -7,23 +7,11 @@ import { api } from '@/lib/client';
 export default function Page() { return <Suspense fallback={null}><Settings /></Suspense>; }
 
 function Settings() {
-  const { status, reloadStatus, reloadTasks } = useApp();
+  const { status, reloadStatus } = useApp();
   const params = useSearchParams();
   const g = status?.google;
   const flash = params.get('google');
-  const [importing, setImporting] = useState(false);
-  const [importMsg, setImportMsg] = useState(null);
   const [name, setName] = useState(null);
-
-  const runImport = async () => {
-    setImporting(true); setImportMsg(null);
-    try {
-      const c = await api('/api/todoist/import', { method: 'POST' });
-      setImportMsg(`Imported ${c.tasks} tasks, ${c.projects} projects, ${c.sections} sections, ${c.labels} labels and ${c.completed} completed items.`);
-      reloadTasks(); reloadStatus();
-    } catch (e) { setImportMsg(e.message); }
-    setImporting(false);
-  };
   const saveName = async () => { await api('/api/settings', { method: 'PATCH', body: { name } }); reloadStatus(); };
   const disconnect = async () => { if (confirm('Disconnect Google?')) { await api('/api/google/disconnect', { method: 'POST' }); reloadStatus(); } };
 
@@ -80,27 +68,10 @@ function Settings() {
         </section>
 
         <section className="card">
-          <div className="card-head"><h2><span className={`status-dot ${status?.todoist?.lastImport ? 'on' : ''}`} />Todoist import</h2></div>
-          <div className="card-body">
-            <p>
-              {status?.todoist?.lastImport
-                ? <>Last imported {new Date(status.todoist.lastImport.at).toLocaleString()} — {status.todoist.lastImport.counts.tasks} tasks, {status.todoist.lastImport.counts.completed} completed.</>
-                : 'Not imported yet.'}
-              {' '}Re-importing updates matching tasks instead of duplicating them. Tasks you’ve created in Me are left alone.
-            </p>
-            <div className="row">
-              <button className="btn" onClick={runImport} disabled={importing || !status?.todoist?.token}>{importing ? <><span className="spin" /> Importing…</> : 'Re-import from Todoist'}</button>
-              {!status?.todoist?.token && <span className="muted">Add TODOIST_API_TOKEN to .env.local</span>}
-            </div>
-            {importMsg && <p style={{ marginTop: 10 }}>{importMsg}</p>}
-          </div>
-        </section>
-
-        <section className="card">
           <div className="card-head"><h2>Your data</h2></div>
           <div className="card-body">
             <p>Everything lives on this Mac in <code>{status?.paths?.db || 'me.db'}</code> (SQLite). Google tokens are stored there too and never leave your machine. Me only listens on localhost.</p>
-            <p><span className="kbd">Q</span> quick-adds a task from anywhere. Quick add understands <code>tomorrow 5pm</code>, <code>every other sunday</code>, <code>p1</code>, <code>#Project</code>, <code>@label</code>.</p>
+            <p><span className="kbd">Q</span> quick-adds a task from anywhere. Quick add understands <code>tomorrow 5pm</code>, <code>every other sunday</code>, <code>p1</code> and <code>#Project</code>.</p>
           </div>
         </section>
       </div>

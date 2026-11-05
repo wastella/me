@@ -86,10 +86,6 @@ export default function TaskEditor({ task, onClose }) {
           </label>
         )}
 
-        <label className="field">Labels (comma separated)
-          <input className="input" defaultValue={f.labels.join(', ')} key={task.id + f.labels.join()}
-            onBlur={(e) => save({ labels: e.target.value.split(',').map((s) => s.trim().replace(/^@/, '')).filter(Boolean) })} />
-        </label>
 
         {!task.parent_id && (
           <div>

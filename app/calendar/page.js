@@ -7,8 +7,10 @@ import { api, useApi, clockTime } from '@/lib/client';
 import { fmt, addDays, parse, todayStr, humanTime } from '@/lib/dates';
 import { IconChevL, IconChevR, IconExt, IconTrash, IconX } from '@/components/Icons';
 
-const HOUR = 48;
+const HOUR = 52;
 const startOfWeek = (d) => { const x = parse(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return fmt(x); };
+const readPref = (k, dflt) => { try { const v = localStorage.getItem(k); return v === null ? dflt : v === '1'; } catch { return dflt; } };
+const writePref = (k, v) => { try { localStorage.setItem(k, v ? '1' : '0'); } catch {} };
 
 export default function CalendarPage() {
   const { status, tasks, openTask } = useApp();
@@ -20,6 +22,9 @@ export default function CalendarPage() {
   const cals = useApi(connected ? '/api/calendar/calendars' : null);
   const [sel, setSel] = useState(null);
   const [creating, setCreating] = useState(null);
+  const [showTasks, setShowTasks] = useState(false);
+  const [calMenu, setCalMenu] = useState(false);
+  useEffect(() => setShowTasks(readPref('me.cal.tasks', false)), []);
   const bodyRef = useRef();
   const today = todayStr();
   const [now, setNow] = useState(new Date());
@@ -37,7 +42,7 @@ export default function CalendarPage() {
           const ds = parse(d), de = parse(addDays(d, 1));
           if (en <= ds || s >= de) continue;
           const a = Math.max(s, ds), b = Math.min(en, de);
-          out[d].timed.push({ ...e, top: ((a - ds) / 3600000) * HOUR, height: Math.max(18, ((b - a) / 3600000) * HOUR - 2), a, b });
+          out[d].timed.push({ ...e, top: ((a - ds) / 3600000) * HOUR, height: Math.max(20, ((b - a) / 3600000) * HOUR - 2), a, b });
         }
       }
     }
@@ -51,77 +56,82 @@ export default function CalendarPage() {
     await api('/api/calendar/calendars', { method: 'PATCH', body: { id: c.id, visible: !c.visible } });
     cals.reload(); ev.reload();
   };
+  const toggleTasks = () => { setShowTasks((v) => { writePref('me.cal.tasks', !v); return !v; }); };
+  const hasAllDay = showTasks || days.some((d) => layout[d].allDay.length);
+  const first = parse(days[0]), last = parse(days[6]);
+  const range = first.getMonth() === last.getMonth()
+    ? first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+    : `${first.toLocaleDateString(undefined, { month: 'short' })} – ${last.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}`;
 
   return (
     <>
       <div className="page-head">
-        <div>
-          <h1>{parse(days[0]).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</h1>
-          <div className="sub">Week of {parse(days[0]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
-        </div>
+        <h1>{range}</h1>
         <div className="cal-toolbar">
           {ev.loading && <span className="spin" />}
-          <button className="btn" onClick={() => setWeek(startOfWeek(today))}>Today</button>
-          <button className="icon-btn" onClick={() => setWeek(addDays(week, -7))}><IconChevL /></button>
-          <button className="icon-btn" onClick={() => setWeek(addDays(week, 7))}><IconChevR /></button>
-          <button className="btn primary" onClick={() => setCreating({ date: today, hour: Math.min(22, now.getHours() + 1) })}>+ Event</button>
+          <button className="btn ghost" onClick={() => setWeek(startOfWeek(today))}>Today</button>
+          <button className="icon-btn" title="Previous week" onClick={() => setWeek(addDays(week, -7))}><IconChevL /></button>
+          <button className="icon-btn" title="Next week" onClick={() => setWeek(addDays(week, 7))}><IconChevR /></button>
+          <span className="tb-sep" />
+          <button className={`btn ghost ${showTasks ? 'on' : ''}`} onClick={toggleTasks}>Tasks</button>
+          <div className="pop-wrap">
+            <button className={`btn ghost ${calMenu ? 'on' : ''}`} onClick={() => setCalMenu((v) => !v)}>Calendars</button>
+            {calMenu && (
+              <>
+                <div className="pop-scrim" onClick={() => setCalMenu(false)} />
+                <div className="pop cal-list">
+                  {(cals.data || []).map((c) => (
+                    <label key={c.id} style={{ '--c': c.color }}>
+                      <input type="checkbox" checked={c.visible} onChange={() => toggleCal(c)} /><span>{c.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          <button className="btn primary" onClick={() => setCreating({ date: today, hour: Math.min(22, now.getHours() + 1) })}>New event</button>
         </div>
       </div>
       {ev.error && <div className="error-box" style={{ marginBottom: 12 }}>{ev.error.message}</div>}
-      <div className="cal-wrap">
-        <div className="card week">
-          <div className="week-head">
-            <div />
-            {days.map((d) => (
-              <div key={d} className={d === today ? 'today' : ''}>{parse(d).toLocaleDateString(undefined, { weekday: 'short' })}<b>{parse(d).getDate()}</b></div>
-            ))}
-          </div>
-          <div className="allday">
-            <div>all-day</div>
-            {days.map((d) => (
-              <div key={d}>
-                {layout[d].allDay.map((e) => <div key={e.id} className="ev" style={{ background: e.color, color: '#fff' }} onClick={() => setSel(e)}>{e.title}</div>)}
-                {(() => {
-                  const dayTasks = tasks.filter((t) => t.due_date === d && !t.parent_id).sort((a, b) => (a.due_time || '99').localeCompare(b.due_time || '99') || a.priority - b.priority);
-                  return (
-                    <>
-                      {dayTasks.slice(0, 3).map((t) => (
-                        <div key={t.id} className="tk" onClick={() => openTask(t)} title={t.content}>○ {t.due_time ? humanTime(t.due_time) + ' ' : ''}{t.content}</div>
-                      ))}
-                      {dayTasks.length > 3 && <Link className="tk" href={d === today ? '/tasks?view=today' : '/tasks?view=upcoming'}>+{dayTasks.length - 3} more</Link>}
-                    </>
-                  );
-                })()}
-              </div>
-            ))}
-          </div>
-          <div className="week-body" ref={bodyRef}>
-            <div className="hours">{Array.from({ length: 24 }, (_, h) => <div key={h}>{h === 0 ? '' : humanTime(`${h}:00`)}</div>)}</div>
-            {days.map((d) => (
-              <div key={d} className={`day-col ${d === today ? 'today' : ''}`} style={{ height: HOUR * 24 }}
-                onDoubleClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setCreating({ date: d, hour: Math.floor((e.clientY - r.top) / HOUR) }); }}>
-                {d === today && <div className="now-line" style={{ top: ((now - parse(d)) / 3600000) * HOUR }} />}
-                {layout[d].timed.map((e) => (
-                  <div key={e.id + d} className={`ev-block ${e.declined ? 'declined' : ''}`} onClick={() => setSel(e)}
-                    style={{ top: e.top, height: e.height, background: e.color, left: `calc(${(e.lane / e.lanes) * 100}% + 2px)`, width: `calc(${100 / e.lanes}% - 5px)`, right: 'auto' }}>
-                    <b>{e.title}</b>{e.height > 30 && <span>{clockTime(e.start)}</span>}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
+      <div className="card week">
+        <div className="week-head">
+          <div />
+          {days.map((d) => (
+            <div key={d} className={d === today ? 'today' : ''}><span>{parse(d).toLocaleDateString(undefined, { weekday: 'short' })}</span><b>{parse(d).getDate()}</b></div>
+          ))}
         </div>
-        <aside className="card">
-          <div className="card-head"><h2>Calendars</h2></div>
-          <div className="card-body cal-list">
-            {(cals.data || []).map((c) => (
-              <label key={c.id} style={{ '--c': c.color }}>
-                <input type="checkbox" checked={c.visible} onChange={() => toggleCal(c)} />{c.name}
-              </label>
-            ))}
-            <p className="muted" style={{ fontSize: 12, marginTop: 10 }}>Double-click the grid to add an event.</p>
+        {hasAllDay && (
+          <div className="allday">
+            <div />
+            {days.map((d) => {
+              const dayTasks = showTasks ? tasks.filter((t) => t.due_date === d && !t.parent_id).sort((a, b) => (a.due_time || '99').localeCompare(b.due_time || '99') || a.priority - b.priority) : [];
+              return (
+                <div key={d}>
+                  {layout[d].allDay.map((e) => <div key={e.id} className="ev" style={{ '--c': e.color }} onClick={() => setSel(e)}>{e.title}</div>)}
+                  {dayTasks.slice(0, 2).map((t) => (
+                    <div key={t.id} className="tk" onClick={() => openTask(t)} title={t.content}>{t.content}</div>
+                  ))}
+                  {dayTasks.length > 2 && <Link className="tk more" href={d === today ? '/tasks?view=today' : '/tasks?view=upcoming'}>+{dayTasks.length - 2} more</Link>}
+                </div>
+              );
+            })}
           </div>
-        </aside>
+        )}
+        <div className="week-body" ref={bodyRef}>
+          <div className="hours">{Array.from({ length: 24 }, (_, h) => <div key={h}>{h === 0 ? '' : humanTime(`${h}:00`)}</div>)}</div>
+          {days.map((d) => (
+            <div key={d} className={`day-col ${d === today ? 'today' : ''}`} style={{ height: HOUR * 24, '--hour': `${HOUR}px` }}
+              onDoubleClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setCreating({ date: d, hour: Math.floor((e.clientY - r.top) / HOUR) }); }}>
+              {d === today && <div className="now-line" style={{ top: ((now - parse(d)) / 3600000) * HOUR }} />}
+              {layout[d].timed.map((e) => (
+                <div key={e.id + d} className={`ev-block ${e.declined ? 'declined' : ''} ${e.b < now ? 'past' : ''}`} onClick={() => setSel(e)}
+                  style={{ '--c': e.color, top: e.top, height: e.height, left: `calc(${(e.lane / e.lanes) * 100}% + 2px)`, width: `calc(${(100 * e.span) / e.lanes}% - 4px)` }}>
+                  <b>{e.title}</b>{e.height > 34 && <span>{clockTime(e.start)} – {clockTime(e.end)}</span>}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
       {sel && <EventModal e={sel} onClose={() => setSel(null)} onDeleted={() => { setSel(null); ev.reload(); }} />}
       {creating && <NewEvent init={creating} calendars={(cals.data || []).filter((c) => c.writable)} onClose={() => setCreating(null)} onCreated={() => { setCreating(null); ev.reload(); }} />}
@@ -132,7 +142,18 @@ export default function CalendarPage() {
 function lanes(list) {
   list.sort((a, b) => a.a - b.a || b.b - a.b);
   let cluster = [], clusterEnd = 0;
-  const flush = () => { const n = Math.max(...cluster.map((e) => e.lane)) + 1; cluster.forEach((e) => (e.lanes = n)); cluster = []; };
+  // Each event also stretches right across lanes that are free while it runs.
+  const flush = () => {
+    const n = Math.max(...cluster.map((e) => e.lane)) + 1;
+    for (const e of cluster) {
+      e.lanes = n; e.span = 1;
+      for (let l = e.lane + 1; l < n; l++) {
+        if (cluster.some((o) => o.lane === l && o.a < e.b && o.b > e.a)) break;
+        e.span++;
+      }
+    }
+    cluster = [];
+  };
   for (const e of list) {
     if (cluster.length && e.a >= clusterEnd) flush();
     const used = new Set(cluster.filter((c) => c.b > e.a).map((c) => c.lane));
@@ -160,7 +181,7 @@ function EventModal({ e, onClose, onDeleted }) {
             : `${new Date(e.start).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })} · ${clockTime(e.start)} – ${clockTime(e.end)}`}
         </div>
         {e.location && <div>📍 {e.location}</div>}
-        <div className="row"><span className="chip dot" style={{ color: e.color }}>{e.calendar}</span></div>
+        <div className="row">{(e.calendars || [e.calendar]).map((c) => <span key={c} className="chip dot" style={{ color: e.color }}>{c}</span>)}</div>
         {e.description && <div className="muted" style={{ whiteSpace: 'pre-wrap', maxHeight: 200, overflow: 'auto', fontSize: 13 }}>{e.description.replace(/<[^>]+>/g, ' ')}</div>}
         <div className="row">
           {e.meet && <a className="btn primary" href={e.meet} target="_blank" rel="noreferrer">Join call</a>}

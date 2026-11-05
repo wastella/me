@@ -40,7 +40,6 @@ export default function TaskItem({ task, showProject = true, sub = false }) {
             </span>
           )}
           {task.deadline && <span className={dueClass(task.deadline) === 'overdue' ? 'overdue' : ''}>⚑ {humanDate(task.deadline)}</span>}
-          {task.labels.map((l) => <span key={l}>@{l}</span>)}
           {showProject && project && (
             <span className="proj"><i style={{ background: colorHex(project.color) }} />{project.name}</span>
           )}

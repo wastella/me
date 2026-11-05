@@ -4,7 +4,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useApp } from './AppProvider';
 import { IconHome, IconList, IconCal, IconMail, IconGear } from './Icons';
-import { todayStr } from '@/lib/dates';
 
 export default function Sidebar() {
   const path = usePathname();
@@ -15,11 +14,9 @@ export default function Sidebar() {
     window.addEventListener('me:navigate', go);
     return () => window.removeEventListener('me:navigate', go);
   }, [router]);
-  const { tasks, status } = useApp();
-  const today = todayStr();
-  const dueNow = tasks.filter((t) => t.due_date && t.due_date <= today).length;
+  const { status } = useApp();
   const links = [
-    { href: '/', label: 'Today', icon: IconHome, badge: dueNow || null },
+    { href: '/', label: 'Home', icon: IconHome },
     { href: '/tasks', label: 'Tasks', icon: IconList },
     { href: '/calendar', label: 'Calendar', icon: IconCal },
     { href: '/mail', label: 'Mail', icon: IconMail },
@@ -28,9 +25,9 @@ export default function Sidebar() {
   return (
     <nav className="sidebar">
       <div className="brand"><div className="brand-mark">Me</div><span>Me</span></div>
-      {links.map(({ href, label, icon: I, badge }) => (
+      {links.map(({ href, label, icon: I }) => (
         <Link key={href} href={href} className={`nav-link ${(href === '/' ? path === '/' : path.startsWith(href)) ? 'active' : ''}`}>
-          <I /><span>{label}</span>{badge && <span className="badge">{badge}</span>}
+          <I /><span>{label}</span>
         </Link>
       ))}
       <div className="spacer" />
