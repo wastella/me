@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "me", "runtimeExecutable": "npm", "runtimeArgs": ["start"], "port": 3737, "url": "http://localhost:3737" }
+  ]
+}
