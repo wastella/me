@@ -54,8 +54,12 @@ function Settings() {
               </>
             ) : g?.configured ? (
               <>
-                <p>Your Google client is set up. Click to sign in and approve access.</p>
-                <a className="btn primary" href="/api/google/connect">Connect Google</a>
+                <p>Your Google client is set up. Click to sign in{status?.desktop ? ' — it opens in your browser, then come back here' : ''}.</p>
+                <div className="row">
+                  <a className="btn primary" href="/api/google/connect">Connect Google</a>
+                  <button className="btn ghost" onClick={reloadStatus}>I’ve approved it — refresh</button>
+                  <button className="btn ghost danger" onClick={async () => { await api('/api/settings', { method: 'PATCH', body: { googleClientId: '', googleClientSecret: '' } }); reloadStatus(); }}>Clear keys</button>
+                </div>
               </>
             ) : (
               <>
@@ -66,10 +70,10 @@ function Settings() {
                   <li>Open <a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noreferrer" style={{ color: 'var(--link)' }}>Google Auth Platform ↗</a> → <b>Get started</b>. App name <b>Me</b>, your email as support email, audience <b>External</b>, then finish.</li>
                   <li>In <b>Audience</b>, click <b>Publish app</b> → confirm. (If you leave it in “Testing”, Google logs you out every 7 days.)</li>
                   <li>In <b>Clients</b> → <b>Create client</b> → type <b>Web application</b>. Under <i>Authorized redirect URIs</i> add <code>{g?.redirectUri || 'http://localhost:3737/api/google/callback'}</code> → <b>Create</b>.</li>
-                  <li>Copy the Client ID and Client secret into <code>~/Me/.env.local</code>:<br /><code>GOOGLE_CLIENT_ID=…</code><br /><code>GOOGLE_CLIENT_SECRET=…</code></li>
-                  <li>Come back here and refresh — a <b>Connect Google</b> button appears. When Google warns the app is unverified, click <b>Advanced → Go to Me</b> (it’s your own app).</li>
+                  <li>Paste the Client ID and Client secret below and click <b>Save</b>.</li>
+                  <li>Click <b>Connect Google</b>. It opens in your browser. When Google warns the app is unverified, click <b>Advanced → Go to Me</b> (it’s your own app), approve, then come back here.</li>
                 </ol>
-                <button className="btn" onClick={reloadStatus}>I’ve added them — check again</button>
+                <GoogleKeys onSaved={reloadStatus} />
               </>
             )}
           </div>
@@ -95,11 +99,30 @@ function Settings() {
         <section className="card">
           <div className="card-head"><h2>Your data</h2></div>
           <div className="card-body">
-            <p>Everything lives on this Mac in <code>~/Me/data/me.db</code> (SQLite). Google tokens are stored there too and never leave your machine. Me only listens on localhost.</p>
+            <p>Everything lives on this Mac in <code>{status?.paths?.db || 'me.db'}</code> (SQLite). Google tokens are stored there too and never leave your machine. Me only listens on localhost.</p>
             <p><span className="kbd">Q</span> quick-adds a task from anywhere. Quick add understands <code>tomorrow 5pm</code>, <code>every other sunday</code>, <code>p1</code>, <code>#Project</code>, <code>@label</code>.</p>
           </div>
         </section>
       </div>
     </>
+  );
+}
+
+function GoogleKeys({ onSaved }) {
+  const [id, setId] = useState('');
+  const [secret, setSecret] = useState('');
+  const [err, setErr] = useState(null);
+  const save = async (e) => {
+    e.preventDefault(); setErr(null);
+    try { await api('/api/settings', { method: 'PATCH', body: { googleClientId: id, googleClientSecret: secret } }); onSaved(); }
+    catch (x) { setErr(x.message); }
+  };
+  return (
+    <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <input className="input" placeholder="Client ID (…apps.googleusercontent.com)" value={id} onChange={(e) => setId(e.target.value)} autoComplete="off" spellCheck={false} />
+      <input className="input" type="password" placeholder="Client secret" value={secret} onChange={(e) => setSecret(e.target.value)} autoComplete="off" />
+      {err && <div className="error-box">{err}</div>}
+      <div className="row"><button className="btn primary" disabled={!id || !secret}>Save</button><span className="muted" style={{ fontSize: 12 }}>Stored only in Me’s local database.</span></div>
+    </form>
   );
 }

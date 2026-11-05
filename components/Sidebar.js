@@ -1,12 +1,20 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useApp } from './AppProvider';
 import { IconHome, IconList, IconCal, IconMail, IconGear } from './Icons';
 import { todayStr } from '@/lib/dates';
 
 export default function Sidebar() {
   const path = usePathname();
+  const router = useRouter();
+  // The desktop app's menu (⌘1–4, ⌘,) navigates by sending this event.
+  useEffect(() => {
+    const go = (e) => router.push(e.detail);
+    window.addEventListener('me:navigate', go);
+    return () => window.removeEventListener('me:navigate', go);
+  }, [router]);
   const { tasks, status } = useApp();
   const today = todayStr();
   const dueNow = tasks.filter((t) => t.due_date && t.due_date <= today).length;

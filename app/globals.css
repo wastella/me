@@ -263,3 +263,10 @@ code { background: var(--panel-2); padding: 1px 6px; border-radius: 5px; font-si
   .brand span, .sidebar .spacer, .sidebar .foot, .nav-link span { display: none; }
   .main { padding: 18px 16px 60px; }
 }
+
+/* Desktop app: room for the macOS traffic lights and a draggable title strip */
+html.desktop body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 30px; -webkit-app-region: drag; z-index: 40; }
+html.desktop .sidebar { padding-top: 46px; }
+html.desktop .main { padding-top: 40px; }
+html.desktop .overlay, html.desktop .modal-wrap, html.desktop .toast { -webkit-app-region: no-drag; z-index: 60; }
+html.desktop .drawer { padding-top: 40px; }
