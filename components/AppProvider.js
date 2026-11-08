@@ -17,6 +17,11 @@ export default function AppProvider({ children }) {
   const draggedAt = useRef(0);
   const toastTimer = useRef();
 
+  // In the Mac app, leave room for the window buttons (top-left).
+  useEffect(() => {
+    if (/Electron/.test(navigator.userAgent)) document.documentElement.classList.add('desktop');
+  }, []);
+
   const showToast = useCallback((msg, action) => {
     clearTimeout(toastTimer.current);
     setToast({ msg, action });
