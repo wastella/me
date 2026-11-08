@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, useApi } from '@/lib/client';
 import { humanDate } from '@/lib/dates';
 import TaskEditor from './TaskEditor';
@@ -12,6 +12,9 @@ export default function AppProvider({ children }) {
   const status = useApi('/api/status');
   const [toast, setToast] = useState(null);
   const [editing, setEditing] = useState(null);
+  const [drag, setDrag] = useState(null);          // { id, title, x, y, target: { list, index } }
+  const lists = useRef(new Map());                 // list key -> { order, reorder }
+  const draggedAt = useRef(0);
   const toastTimer = useRef();
 
   const showToast = useCallback((msg, action) => {
@@ -47,6 +50,80 @@ export default function AppProvider({ children }) {
     showToast(r.rescheduled ? `Done · next: ${humanDate(r.rescheduled)}` : `Completed “${task.content}”`, { label: 'Undo', run: undo });
   }, [tasksQ, showToast]);
 
+  // Drag-and-drop: apply locally first so the list doesn't jump, then save.
+  const reorderTasks = useCallback(async ({ ids, field, moved, patch }) => {
+    const pos = Object.fromEntries(ids.map((id, i) => [id, i]));
+    tasksQ.setData((d) => d && { ...d, tasks: d.tasks.map((t) => {
+      let n = t.id in pos ? { ...t, [field]: pos[t.id] } : t;
+      if (patch && t.id === moved) n = { ...n, ...patch, ...('due_date' in patch && !patch.due_date ? { due_time: null, recurring: false } : {}) };
+      return n;
+    }) });
+    try { await api('/api/tasks/reorder', { method: 'POST', body: { ids, field, moved, patch } }); }
+    finally { tasksQ.reload(); }
+  }, [tasksQ]);
+
+  const registerList = useCallback((key, info) => {
+    lists.current.set(key, info);
+    return () => lists.current.delete(key);
+  }, []);
+
+  // Pointer-based drag: press on a task and move 5px to pick it up; a line
+  // shows where it will land; release to drop. Works across days/sections.
+  const startDrag = useCallback((e, task) => {
+    if (e.button !== 0 || e.target.closest('button, a, input, textarea, select')) return;
+    const sx = e.clientX, sy = e.clientY;
+    let live = false;
+    const hit = (x, y) => {
+      const el = document.elementFromPoint(x, y);
+      const row = el?.closest('[data-list]');
+      if (row) {
+        let index = Number(row.dataset.index);
+        if (row.dataset.kid) index += 1;
+        else { const r = row.getBoundingClientRect(); if (y > r.top + r.height / 2) index += 1; }
+        return { list: row.dataset.list, index };
+      }
+      const zone = el?.closest('[data-drop-list]');
+      if (zone) return { list: zone.dataset.dropList, index: lists.current.get(zone.dataset.dropList)?.order.length ?? 0 };
+      // Just above or below a list counts as its start or end.
+      for (const node of document.querySelectorAll('[data-drop-list]')) {
+        const r = node.getBoundingClientRect();
+        if (x < r.left || x > r.right) continue;
+        if (y >= r.bottom && y <= r.bottom + 40) return { list: node.dataset.dropList, index: lists.current.get(node.dataset.dropList)?.order.length ?? 0 };
+        if (y <= r.top && y >= r.top - 24) return { list: node.dataset.dropList, index: 0 };
+      }
+      return null;
+    };
+    const move = (ev) => {
+      if (!live) {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
+        live = true;
+        document.body.classList.add('is-dragging');
+      }
+      ev.preventDefault();
+      if (ev.clientY < 50) window.scrollBy(0, -14);
+      else if (ev.clientY > window.innerHeight - 50) window.scrollBy(0, 14);
+      setDrag({ id: task.id, title: task.content, x: ev.clientX, y: ev.clientY, target: hit(ev.clientX, ev.clientY) });
+    };
+    const up = (ev) => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      document.body.classList.remove('is-dragging');
+      if (!live) return;
+      draggedAt.current = Date.now();
+      const target = hit(ev.clientX, ev.clientY);
+      setDrag(null);
+      const reg = target && lists.current.get(target.list);
+      if (!reg) return;
+      const from = reg.order.indexOf(task.id);
+      const next = reg.order.filter((x) => x !== task.id);
+      next.splice(from !== -1 && from < target.index ? target.index - 1 : target.index, 0, task.id);
+      if (from !== -1 && next.join() === reg.order.join()) return;
+      reorderTasks({ ids: next, field: reg.reorder.field, moved: task.id, patch: from === -1 ? reg.reorder.patch : undefined });
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }, [reorderTasks]);
+
   const deleteTask = useCallback(async (task) => {
     if (!confirm(`Delete “${task.content}”? This can't be undone.`)) return;
     tasksQ.setData((d) => d && { ...d, tasks: d.tasks.filter((t) => t.id !== task.id) });
@@ -58,7 +135,8 @@ export default function AppProvider({ children }) {
   const value = {
     ...data, projectById, tasksLoading: tasksQ.loading, reloadTasks: tasksQ.reload,
     status: status.data, reloadStatus: status.reload,
-    addTask, updateTask, completeTask, deleteTask, showToast,
+    addTask, updateTask, completeTask, deleteTask, showToast, reorderTasks,
+    drag, startDrag, registerList, justDragged: () => Date.now() - draggedAt.current < 250,
     openTask: (t) => setEditing(t.id),
   };
   const editingTask = editing && data.tasks.find((t) => t.id === editing);
@@ -67,6 +145,7 @@ export default function AppProvider({ children }) {
     <Ctx.Provider value={value}>
       {children}
       {editingTask && <TaskEditor task={editingTask} onClose={() => setEditing(null)} />}
+      {drag && <div className="drag-ghost" style={{ left: drag.x + 12, top: drag.y + 8 }}>{drag.title}</div>}
       {toast && (
         <div className="toast" role="status">
           <span>{toast.msg}</span>

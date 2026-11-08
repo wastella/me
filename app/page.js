@@ -106,7 +106,7 @@ export default function Home() {
           <div className="card-body">
             <QuickAdd defaults={{ due_date: today }} placeholder="Add a task for today…" />
             {tasksLoading && !tasks.length ? <div className="empty"><span className="spin" /></div>
-              : <TaskList tasks={due} allTasks={tasks} empty="Nothing due today." />}
+              : <TaskList tasks={due} allTasks={tasks} empty="Nothing due today." reorder={{ field: 'day_order', patch: { due_date: today } }} />}
           </div>
         </section>
       </div>

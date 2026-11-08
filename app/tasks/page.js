@@ -33,13 +33,11 @@ function Tasks() {
   let title = 'Today', body = null, defaults = {};
   if (view === 'today') {
     defaults = { due_date: today };
-    const overdue = tasks.filter((t) => t.due_date && t.due_date < today).sort(sortTasks);
-    const td = tasks.filter((t) => t.due_date === today).sort(sortTasks);
+    const td = tasks.filter((t) => t.due_date && t.due_date <= today).sort(sortTasks);
     body = (
       <>
-        {overdue.length > 0 && <><div className="group-title overdue">Overdue <span className="count">{overdue.length}</span></div><TaskList tasks={overdue} allTasks={tasks} /></>}
         <div className="group-title">{parse(today).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })} <span className="count">{td.length}</span></div>
-        <TaskList tasks={td} allTasks={tasks} empty="Nothing due today." />
+        <TaskList tasks={td} allTasks={tasks} empty="Nothing due today." reorder={{ field: 'day_order', patch: { due_date: today } }} />
       </>
     );
   } else if (view === 'upcoming') {
@@ -53,13 +51,13 @@ function Tasks() {
           return (
             <div key={d}>
               <div className="group-title">{humanDate(d)} <span className="count">{parse(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{list.length ? ` · ${list.length}` : ''}</span></div>
-              <TaskList tasks={list} allTasks={tasks} />
+              <TaskList tasks={list} allTasks={tasks} reorder={{ field: 'day_order', patch: { due_date: d } }} />
             </div>
           );
         })}
         {later.length > 0 && <><div className="group-title">Later <span className="count">{later.length}</span></div><TaskList tasks={later} allTasks={tasks} /></>}
         <div className="group-title">No date</div>
-        <TaskList tasks={tasks.filter((t) => !t.due_date && !t.parent_id).sort(sortTasks)} allTasks={tasks} empty="Everything has a date." />
+        <TaskList tasks={tasks.filter((t) => !t.due_date && !t.parent_id).sort(sortTasks)} allTasks={tasks} empty="Everything has a date." reorder={{ field: 'day_order', patch: { due_date: null } }} />
       </>
     );
   } else if (view.startsWith('p:')) {
@@ -71,13 +69,13 @@ function Tasks() {
     const loose = inProj.filter((t) => !t.section_id).sort((a, b) => a.sort - b.sort);
     body = (
       <>
-        <TaskList tasks={loose} allTasks={tasks} showProject={false} empty={secs.length ? null : 'No tasks here yet.'} />
+        <TaskList tasks={loose} allTasks={tasks} showProject={false} empty={secs.length ? null : 'No tasks here yet.'} reorder={{ field: 'sort', patch: { section_id: null, project_id: p?.id } }} />
         {secs.map((s) => {
           const list = inProj.filter((t) => t.section_id === s.id).sort((a, b) => a.sort - b.sort);
           return (
             <div key={s.id}>
               <div className="group-title">{s.name} <span className="count">{list.length}</span></div>
-              <TaskList tasks={list} allTasks={tasks} showProject={false} />
+              <TaskList tasks={list} allTasks={tasks} showProject={false} reorder={{ field: 'sort', patch: { section_id: s.id, project_id: p.id } }} />
               <div style={{ padding: '6px 0 4px' }}><QuickAdd hotkey={false} placeholder={`Add to ${s.name}`} defaults={{ project_id: p.id, section_id: s.id }} /></div>
             </div>
           );
