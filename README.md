@@ -1,22 +1,22 @@
 # Me
 
-Your personal dashboard: tasks (migrated from Todoist), Google Calendar and Gmail, all in one place. Me is a native macOS app (Electron). Your data lives in `~/Library/Application Support/Me` and never leaves your Mac.
+Your personal dashboard: tasks, Google Calendar, Gmail and training, in sync between your Mac and iPhone.
 
-## Run it
+- **Web/phone:** https://me-omega-green.vercel.app. On iPhone, open it in Safari, then **Share → Add to Home Screen**.
+- **Mac:** the Me app in Applications is a native window onto the same site.
+- **Data:** your own Turso database (`me`). Only `OWNER_EMAIL` can sign in, with Google.
 
-Open **Me** from Applications, Launchpad or Spotlight. To keep it handy, right-click its Dock icon and choose **Options → Keep in Dock**. To have it start when you log in, choose **Me → Open at Login** in the menu bar.
-
-Shortcuts: **⌘N** quick-adds a task, **⌘1–4** switch between Today, Tasks, Calendar and Mail, and **⌘,** opens Settings. Closing the window keeps Me running in the Dock; use **⌘Q** to quit. The Dock badge shows how many tasks are due or overdue.
-
-### Rebuilding after code changes
+## Deploying changes
 
 ```bash
-cd ~/Me && npm run install-app
+cd ~/Me && npx vercel deploy --prod
 ```
 
-This builds the app and replaces `/Applications/Me.app`. Quit Me first.
+Settings (Turso URL and token, `SESSION_SECRET`, `OWNER_EMAIL`, `APP_URL`, `ME_TZ`) live in the Vercel project. To rebuild the Mac app after changing `electron/`, run `npm run install-app`.
 
-To develop with live-reload in a browser, use `npm run dev` and open http://localhost:3737. That mode uses `~/Me/data` instead of the desktop app's data.
+## Local development
+
+`npm run dev` runs Me at http://localhost:3737 against a local SQLite file in `data/`, with no sign-in. To point the Mac app at it, use `npm run app:local`.
 
 ## Connect Google (one time, about 5 minutes)
 

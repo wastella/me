@@ -1,0 +1,9 @@
+# Never upload local secrets, data or desktop-app build files.
+.env.local
+.env*.local
+data/
+dist/
+build/
+.next/
+node_modules/
+.claude/
