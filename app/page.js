@@ -7,7 +7,6 @@ import { TaskList, sortTasks } from '@/components/TaskItem';
 import ConnectGoogle from '@/components/ConnectGoogle';
 import { useApi, clockTime } from '@/lib/client';
 import { todayStr, fmt } from '@/lib/dates';
-import Posture from '@/components/Posture';
 
 const greeting = (h) => (h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening');
 
@@ -76,7 +75,6 @@ export default function Home() {
             </div>
           </section>
 
-          <TrainingCard />
         </div>
 
         <section className="card h-tasks">
@@ -89,21 +87,5 @@ export default function Home() {
         </section>
       </div>
     </>
-  );
-}
-
-function TrainingCard() {
-  const q = useApi('/api/training');
-  const d = q.data;
-  if (!d) return null;
-  const { plan, today } = d;
-  const lifted = d.history.some((w) => w.date === today);
-  const label = lifted ? `${plan.day === 'upper' ? 'Upper' : 'Lower'} done`
-    : plan.status === 'rest' ? 'Rest day' : `${plan.day === 'upper' ? 'Upper' : 'Lower'} day`;
-  return (
-    <section className="card h-train">
-      <div className="card-head"><h2>Training<span className="count">{label}</span></h2><Link className="more" href="/training">{!lifted && plan.status === 'due' ? 'Log lift' : 'Training'}</Link></div>
-      <div className="card-body home-posture"><Posture data={d} reload={q.reload} compact /></div>
-    </section>
   );
 }
