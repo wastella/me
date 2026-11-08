@@ -11,7 +11,7 @@ const HOUR = 52;
 const startOfWeek = (d) => { const x = parse(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return fmt(x); };
 const readPref = (k, dflt) => { try { const v = localStorage.getItem(k); return v === null ? dflt : v; } catch { return dflt; } };
 const writePref = (k, v) => { try { localStorage.setItem(k, String(v)); } catch {} };
-const VIEWS = [['day', 'Day', 'T'], ['week', 'Week', 'W'], ['month', 'Month', 'M']];
+const VIEWS = [['day', 'Day', 'D'], ['week', 'Week', 'W'], ['month', 'Month', 'M']];
 const isMobile = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 760px)').matches;
 
 // The dates a view shows, starting from the cursor date.
@@ -55,13 +55,14 @@ export default function CalendarPage() {
 
   const step = (dir) => setCursor((c) => (view === 'day' ? addDays(c, dir) : view === 'week' ? addDays(c, 7 * dir) : addMonths(c, dir)));
 
-  // T = today (day view), W = week, M = month, ←/→ = previous/next.
+  // D = day, W = week, M = month, T = jump to today, ←/→ = previous/next.
   useEffect(() => {
     const onKey = (e) => {
       if (e.metaKey || e.ctrlKey || e.altKey || sel || creating) return;
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
       const k = e.key.toLowerCase();
-      if (k === 't') { changeView('day'); setCursor(todayStr()); }
+      if (k === 'd') changeView('day');
+      else if (k === 't') setCursor(todayStr());
       else if (k === 'w') changeView('week');
       else if (k === 'm') changeView('month');
       else if (e.key === 'ArrowLeft') step(-1);
@@ -206,7 +207,7 @@ export default function CalendarPage() {
           </div>
         </div>
       )}
-      <p className="muted kbd-hint">Keys: <span className="kbd">T</span> today · <span className="kbd">W</span> week · <span className="kbd">M</span> month · <span className="kbd">←</span> <span className="kbd">→</span> move · double-click to add</p>
+      <p className="muted kbd-hint">Keys: <span className="kbd">D</span> day · <span className="kbd">W</span> week · <span className="kbd">M</span> month · <span className="kbd">T</span> today · <span className="kbd">←</span> <span className="kbd">→</span> move · double-click to add</p>
       {sel && <EventModal e={sel} onClose={() => setSel(null)} onDeleted={() => { setSel(null); ev.reload(); }} />}
       {creating && <NewEvent init={creating} calendars={(cals.data || []).filter((cal) => cal.writable)} onClose={() => setCreating(null)} onCreated={() => { setCreating(null); ev.reload(); }} />}
     </>
