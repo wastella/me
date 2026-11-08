@@ -5,9 +5,8 @@ import { useApp } from '@/components/AppProvider';
 import QuickAdd from '@/components/QuickAdd';
 import { TaskList, sortTasks } from '@/components/TaskItem';
 import ConnectGoogle from '@/components/ConnectGoogle';
-import { useApi, relTime, clockTime } from '@/lib/client';
+import { useApi, clockTime } from '@/lib/client';
 import { todayStr, fmt } from '@/lib/dates';
-import { todayQuery } from '@/lib/mailq';
 import Posture from '@/components/Posture';
 
 const greeting = (h) => (h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening');
@@ -29,8 +28,6 @@ export default function Home() {
   const start = new Date(); start.setHours(0, 0, 0, 0);
   const end = new Date(start); end.setDate(end.getDate() + 1);
   const events = useApi(connected ? `/api/calendar/events?start=${start.toISOString()}&end=${end.toISOString()}` : null, { refreshMs: 5 * 60_000 });
-  const [mailQ] = useState(() => todayQuery());
-  const mail = useApi(connected ? `/api/mail?max=15&q=${encodeURIComponent(mailQ)}` : null, { refreshMs: 2 * 60_000 });
 
   const [showPast, setShowPast] = useState(false);
   const todaysEvents = (events.data || []).filter((e) => (e.allDay ? e.start <= today && e.end > today : fmt(new Date(e.start)) === today) && !e.declined);
@@ -80,28 +77,6 @@ export default function Home() {
           </section>
 
           <TrainingCard />
-
-          <section className="card h-mail">
-            <div className="card-head">
-              <h2>New today{mail.data?.messages?.length ? <span className="count">{mail.data.messages.length}{mail.data.nextPageToken ? '+' : ''}</span> : null}</h2>
-              <a className="more" href="https://mail.google.com/mail/u/0/#inbox" target="_blank" rel="noreferrer">Gmail</a>
-            </div>
-            <div className="card-body">
-              {!connected ? <ConnectGoogle what="your email" /> : mail.error ? <div className="error-box">{mail.error.message}</div> : !mail.data ? <div className="empty"><span className="spin" /></div> : (
-                mail.data.messages.length === 0 ? <div className="empty">No new email today.</div> : (
-                  <ul className="mail-mini">
-                    {mail.data.messages.slice(0, 8).map((m) => (
-                      <li key={m.id} className={m.unread ? 'unread' : ''}>
-                        <a href={`https://mail.google.com/mail/u/0/#all/${m.threadId}`} target="_blank" rel="noreferrer" className="from">{m.from.name}</a>
-                        <span className="time">{relTime(m.date)}</span>
-                        <a href={`https://mail.google.com/mail/u/0/#all/${m.threadId}`} target="_blank" rel="noreferrer" className="subj">{m.subject}</a>
-                      </li>
-                    ))}
-                  </ul>
-                )
-              )}
-            </div>
-          </section>
         </div>
 
         <section className="card h-tasks">
