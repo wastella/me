@@ -3,7 +3,8 @@ import { db, newId } from '@/lib/db';
 export const POST = handle(async (req) => {
   const b = await body(req);
   if (!b.name?.trim()) return json({ error: 'name required' }, 400);
+  const q = await db();
   const id = newId();
-  db().prepare('INSERT INTO projects (id, name, color, sort) VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort),0)+1 FROM projects))').run(id, b.name.trim(), b.color || 'charcoal');
-  return json(db().prepare('SELECT * FROM projects WHERE id = ?').get(id), 201);
+  await q.run('INSERT INTO projects (id, name, color, sort) VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort),0)+1 FROM projects WHERE is_inbox = 0))', id, b.name.trim(), b.color || 'charcoal');
+  return json(await q.get('SELECT * FROM projects WHERE id = ?', id), 201);
 });

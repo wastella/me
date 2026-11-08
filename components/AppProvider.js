@@ -73,6 +73,14 @@ export default function AppProvider({ children }) {
     if (e.button !== 0 || e.target.closest('button, a, input, textarea, select')) return;
     const sx = e.clientX, sy = e.clientY;
     let live = false;
+    // Touch: press and hold to pick a task up, so swiping still scrolls.
+    const touch = e.pointerType === 'touch';
+    let armed = !touch, holdTimer = null;
+    const stopScroll = (ev) => { if (live) ev.preventDefault(); };
+    if (touch) {
+      holdTimer = setTimeout(() => { armed = true; navigator.vibrate?.(10); setDrag({ id: task.id, title: task.content, x: sx, y: sy, target: null }); live = true; document.body.classList.add('is-dragging'); }, 350);
+      window.addEventListener('touchmove', stopScroll, { passive: false });
+    }
     const hit = (x, y) => {
       const el = document.elementFromPoint(x, y);
       const row = el?.closest('[data-list]');
@@ -94,6 +102,7 @@ export default function AppProvider({ children }) {
       return null;
     };
     const move = (ev) => {
+      if (!armed) { if (Math.hypot(ev.clientX - sx, ev.clientY - sy) > 8) cleanup(); return; }
       if (!live) {
         if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
         live = true;
@@ -104,11 +113,19 @@ export default function AppProvider({ children }) {
       else if (ev.clientY > window.innerHeight - 50) window.scrollBy(0, 14);
       setDrag({ id: task.id, title: task.content, x: ev.clientX, y: ev.clientY, target: hit(ev.clientX, ev.clientY) });
     };
-    const up = (ev) => {
+    const cleanup = () => {
+      clearTimeout(holdTimer);
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cleanup);
+      window.removeEventListener('touchmove', stopScroll);
       document.body.classList.remove('is-dragging');
-      if (!live) return;
+      if (live) setDrag(null);
+    };
+    const up = (ev) => {
+      const wasLive = live;
+      cleanup();
+      if (!wasLive) return;
       draggedAt.current = Date.now();
       const target = hit(ev.clientX, ev.clientY);
       setDrag(null);
@@ -122,6 +139,7 @@ export default function AppProvider({ children }) {
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cleanup);
   }, [reorderTasks]);
 
   const deleteTask = useCallback(async (task) => {

@@ -1,11 +1,14 @@
 import { handle, json } from '@/lib/http';
 import { kvGet } from '@/lib/db';
-import { ENV_FILE } from '@/lib/env';
-import path from 'node:path';
 import { googleConfigured, googleConnected, REDIRECT_URI } from '@/lib/google';
-export const GET = handle(async () => json({
-  name: kvGet('name'),
-  desktop: !!process.env.ME_DESKTOP,
-  paths: { env: ENV_FILE, db: path.join(process.env.ME_DATA_DIR || path.join(process.cwd(), 'data'), 'me.db') },
-  google: { configured: googleConfigured(), connected: googleConnected(), email: kvGet('google_email'), redirectUri: REDIRECT_URI },
-}));
+import { authRequired } from '@/lib/session';
+export const GET = handle(async () => {
+  const [name, configured, connected, email] = await Promise.all([kvGet('name'), googleConfigured(), googleConnected(), kvGet('google_email')]);
+  return json({
+    name,
+    desktop: !!process.env.ME_DESKTOP,
+    hosted: authRequired(),
+    storage: process.env.TURSO_DATABASE_URL ? 'cloud' : 'local',
+    google: { configured, connected, email, redirectUri: REDIRECT_URI },
+  });
+});

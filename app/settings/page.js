@@ -67,10 +67,22 @@ function Settings() {
           </div>
         </section>
 
+        {status?.hosted && (
+          <section className="card">
+            <div className="card-head"><h2>This device</h2></div>
+            <div className="card-body">
+              <p>Signed in as <b style={{ color: 'var(--text)' }}>{status?.google?.email}</b>. Your data syncs between your Mac and phone.</p>
+              <button className="btn ghost danger" onClick={async () => { await api('/api/auth/logout', { method: 'POST' }); window.location.href = '/login'; }}>Sign out on this device</button>
+            </div>
+          </section>
+        )}
+
         <section className="card">
           <div className="card-head"><h2>Your data</h2></div>
           <div className="card-body">
-            <p>Everything lives on this Mac in <code>{status?.paths?.db || 'me.db'}</code> (SQLite). Google tokens are stored there too and never leave your machine. Me only listens on localhost.</p>
+            <p>{status?.storage === 'cloud'
+              ? 'Your data lives in your own Turso database, so every device you sign in on sees the same thing. Only your Google account can sign in.'
+              : 'Your data lives on this Mac in a local SQLite database. Me only listens on localhost.'}</p>
             <p><span className="kbd">Q</span> quick-adds a task from anywhere. Quick add understands <code>tomorrow 5pm</code>, <code>every other sunday</code>, <code>p1</code> and <code>#Project</code>.</p>
           </div>
         </section>

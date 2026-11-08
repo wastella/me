@@ -413,3 +413,94 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 .home-posture > .card { border: 0; background: transparent; }
 .home-posture > .card > .card-head { padding: 0 0 2px; }
 .home-posture > .card > .card-body { padding: 0; }
+
+/* Sign-in */
+.login { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); z-index: 100; padding: 24px; }
+.login-card { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; max-width: 320px; }
+.login-card h1 { font-size: 24px; }
+.login-card p { margin: 0 0 8px; }
+.login-card .small { font-size: 12.5px; }
+.brand-mark.big { width: 56px; height: 56px; border-radius: 15px; font-size: 20px; font-weight: 700; }
+
+/* Calendar views */
+.week-head, .allday, .week-body { grid-template-columns: 48px repeat(var(--cols, 7), 1fr) !important; }
+.week.is-day .ev-block { font-size: 12.5px; padding: 5px 9px; }
+.views-switch button { padding: 4px 10px; }
+.kbd-hint { font-size: 11.5px; margin-top: 10px; }
+.month { overflow: hidden; }
+.month-head { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--line); }
+.month-head div { padding: 9px 8px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); font-weight: 600; }
+.month-grid { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: minmax(104px, calc((100vh - 230px) / 6)); }
+.mcell { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 4px 5px; display: flex; flex-direction: column; gap: 2px; min-width: 0; overflow: hidden; }
+.mcell:nth-child(7n) { border-right: 0; }
+.mcell.out { background: color-mix(in srgb, var(--bg) 60%, transparent); }
+.mcell.out .mnum { color: var(--faint); }
+.mnum { align-self: flex-start; border: 0; background: transparent; font-size: 12px; font-weight: 600; padding: 2px 6px; border-radius: 999px; color: var(--muted); }
+.mnum:hover { background: var(--panel-2); }
+.mcell.today .mnum { background: var(--accent); color: #fff; }
+.mev { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 1px 4px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+.mev:hover { background: var(--panel-2); }
+.mev i { width: 6px; height: 6px; border-radius: 50%; background: var(--c); flex: none; }
+.mev .t { color: var(--muted); font-variant-numeric: tabular-nums; }
+.mev.all { background: color-mix(in srgb, var(--c) 22%, transparent); border-left: 2px solid var(--c); }
+.mev.task { color: var(--muted); }
+.mmore { border: 0; background: transparent; color: var(--faint); font-size: 11px; text-align: left; padding: 0 4px; }
+.mmore:hover { color: var(--text); }
+
+/* ---------- Phone ---------- */
+@media (hover: none) { .task { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; } .task-actions { display: none; } }
+@media (max-width: 760px) {
+  body { -webkit-text-size-adjust: 100%; }
+  .shell { display: block; }
+  .sidebar {
+    position: fixed; top: auto; bottom: 0; left: 0; right: 0; z-index: 30; height: auto;
+    flex-direction: row; justify-content: space-around; gap: 0; overflow: visible;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  }
+  .sidebar .brand, .sidebar .spacer, .sidebar .foot { display: none; }
+  .nav-link { flex: 1; flex-direction: column; gap: 3px; padding: 6px 2px; font-size: 10.5px; justify-content: center; border-radius: 10px; }
+  .nav-link span { display: block !important; }
+  .nav-link svg { width: 21px; height: 21px; }
+  .nav-link.active { background: transparent; color: var(--text); }
+  .main { padding: calc(14px + env(safe-area-inset-top)) 14px calc(84px + env(safe-area-inset-bottom)); }
+  .hero { margin-bottom: 14px; }
+  .hero h1 { font-size: 22px; }
+  .page-head { margin-bottom: 12px; gap: 10px; }
+  .page-head h1 { font-size: 20px; }
+  .card-head, .card-body { padding-left: 14px; padding-right: 14px; }
+  .task { padding: 11px 2px; }
+  .check { width: 22px; height: 22px; }
+  .input, .quickadd input { font-size: 16px; }            /* stops iOS zooming into fields */
+  .drawer { padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
+  .toast { bottom: calc(80px + env(safe-area-inset-bottom)); max-width: calc(100% - 24px); }
+  /* Tasks: views become a swipeable row */
+  .tasks-layout { gap: 8px; }
+  .views { flex-direction: row; overflow-x: auto; gap: 4px; padding-bottom: 4px; scrollbar-width: none; }
+  .views::-webkit-scrollbar { display: none; }
+  .views .label { display: none; }
+  .view-link { width: auto; white-space: nowrap; border: 1px solid var(--line-2); border-radius: 999px; padding: 5px 12px; flex: none; }
+  .view-link .n { margin-left: 6px; }
+  /* Calendar */
+  .cal-head { flex-direction: column; align-items: stretch; }
+  .cal-toolbar { flex-wrap: wrap; }
+  .cal-toolbar .tb-sep, .kbd-hint { display: none; }
+  .week-body { height: calc(100vh - 260px); }
+  .month-grid { grid-auto-rows: minmax(64px, auto); }
+  .mev .t, .mev:not(.all) { font-size: 10px; }
+  .mcell { padding: 2px; }
+  /* Training */
+  .stat-line { grid-template-columns: repeat(2, 1fr); row-gap: 10px; }
+  .lift-row { flex-wrap: wrap; }
+  .modal-wrap { align-items: end; padding: 0; }
+  .modal { width: 100%; border-radius: 18px 18px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom)); max-height: 90vh; overflow: auto; }
+  .pop { right: auto; left: 0; }
+}
+@media (max-width: 1000px) { .grid-dash, .train-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) {
+  .grid-dash { display: flex; flex-direction: column; gap: 14px; align-items: stretch; }
+  .grid-dash > *, .train-grid > * { min-width: 0; }
+  .grid-dash > .stack { display: contents; }
+  .h-sched { order: 1; } .h-tasks { order: 2; } .h-train { order: 3; } .h-mail { order: 4; }
+}
+@media (max-width: 1000px) { .tasks-layout { grid-template-columns: minmax(0, 1fr); } .views { min-width: 0; max-width: 100%; } }
