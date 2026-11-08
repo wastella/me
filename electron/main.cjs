@@ -110,7 +110,7 @@ function buildMenu() {
     ] },
     { role: 'editMenu' },
     { label: 'View', submenu: [
-      go('Home', '/', 1), go('Tasks', '/tasks', 2), go('Calendar', '/calendar', 3), go('Mail', '/mail', 4),
+      go('Home', '/', 1), go('Tasks', '/tasks', 2), go('Calendar', '/calendar', 3), go('Training', '/training', 4),
       { type: 'separator' }, { role: 'reload' }, { role: 'toggleDevTools' }, { type: 'separator' },
       { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { type: 'separator' }, { role: 'togglefullscreen' },
     ] },

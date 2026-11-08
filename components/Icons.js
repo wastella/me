@@ -18,3 +18,4 @@ export const IconX = P(<path d="M6 6l12 12M18 6 6 18" />);
 export const IconRefresh = P(<><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8M4 4v4h4" /><path d="M4 13a8 8 0 0 0 14.6 4.5L20 16M20 20v-4h-4" /></>);
 export const IconMailUnread = P(<><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m3.5 7 8.5 6 8.5-6" /><circle cx="19" cy="5" r="3" fill="currentColor" /></>);
 export const IconTask = P(<><rect x="4" y="4" width="16" height="16" rx="4" /><path d="m8.5 12 2.5 2.5 4.5-5" /></>);
+export const IconLift = P(<><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11" /></>);

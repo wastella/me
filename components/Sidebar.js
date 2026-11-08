@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useApp } from './AppProvider';
-import { IconHome, IconList, IconCal, IconMail, IconGear } from './Icons';
+import { IconHome, IconList, IconCal, IconLift, IconGear } from './Icons';
 
 export default function Sidebar() {
   const path = usePathname();
@@ -19,7 +19,7 @@ export default function Sidebar() {
     { href: '/', label: 'Home', icon: IconHome },
     { href: '/tasks', label: 'Tasks', icon: IconList },
     { href: '/calendar', label: 'Calendar', icon: IconCal },
-    { href: '/mail', label: 'Mail', icon: IconMail },
+    { href: '/training', label: 'Training', icon: IconLift },
     { href: '/settings', label: 'Settings', icon: IconGear },
   ];
   return (

@@ -8,6 +8,7 @@ import ConnectGoogle from '@/components/ConnectGoogle';
 import { useApi, relTime, clockTime } from '@/lib/client';
 import { todayStr, fmt } from '@/lib/dates';
 import { todayQuery } from '@/lib/mailq';
+import Posture from '@/components/Posture';
 
 const greeting = (h) => (h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening');
 
@@ -78,10 +79,12 @@ export default function Home() {
             </div>
           </section>
 
+          <TrainingCard />
+
           <section className="card">
             <div className="card-head">
               <h2>New today{mail.data?.messages?.length ? <span className="count">{mail.data.messages.length}{mail.data.nextPageToken ? '+' : ''}</span> : null}</h2>
-              <Link className="more" href="/mail">Mail</Link>
+              <a className="more" href="https://mail.google.com/mail/u/0/#inbox" target="_blank" rel="noreferrer">Gmail</a>
             </div>
             <div className="card-body">
               {!connected ? <ConnectGoogle what="your email" /> : mail.error ? <div className="error-box">{mail.error.message}</div> : !mail.data ? <div className="empty"><span className="spin" /></div> : (
@@ -89,9 +92,9 @@ export default function Home() {
                   <ul className="mail-mini">
                     {mail.data.messages.slice(0, 8).map((m) => (
                       <li key={m.id} className={m.unread ? 'unread' : ''}>
-                        <Link href={`/mail?id=${m.id}`} className="from">{m.from.name}</Link>
+                        <a href={`https://mail.google.com/mail/u/0/#all/${m.threadId}`} target="_blank" rel="noreferrer" className="from">{m.from.name}</a>
                         <span className="time">{relTime(m.date)}</span>
-                        <Link href={`/mail?id=${m.id}`} className="subj">{m.subject}</Link>
+                        <a href={`https://mail.google.com/mail/u/0/#all/${m.threadId}`} target="_blank" rel="noreferrer" className="subj">{m.subject}</a>
                       </li>
                     ))}
                   </ul>
@@ -111,5 +114,21 @@ export default function Home() {
         </section>
       </div>
     </>
+  );
+}
+
+function TrainingCard() {
+  const q = useApi('/api/training');
+  const d = q.data;
+  if (!d) return null;
+  const { plan, today } = d;
+  const lifted = d.history.some((w) => w.date === today);
+  const label = lifted ? `${plan.day === 'upper' ? 'Upper' : 'Lower'} done`
+    : plan.status === 'rest' ? 'Rest day' : `${plan.day === 'upper' ? 'Upper' : 'Lower'} day`;
+  return (
+    <section className="card">
+      <div className="card-head"><h2>Training<span className="count">{label}</span></h2><Link className="more" href="/training">{!lifted && plan.status === 'due' ? 'Log lift' : 'Training'}</Link></div>
+      <div className="card-body home-posture"><Posture data={d} reload={q.reload} compact /></div>
+    </section>
   );
 }
