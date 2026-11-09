@@ -67,6 +67,16 @@ function Settings() {
           </div>
         </section>
 
+        {status?.mcpUrl && (
+          <section className="card">
+            <div className="card-head"><h2>Claude connector</h2></div>
+            <div className="card-body">
+              <p>Lets Claude (on your Mac, iPhone, or in Claude Code) read and change your tasks, calendar and training, using your Claude plan. In claude.ai open <b style={{ color: 'var(--text)' }}>Settings → Connectors → Add custom connector</b>, name it <b style={{ color: 'var(--text)' }}>Me</b>, and paste this URL. Keep it private: anyone with it can use your Me.</p>
+              <CopyField value={status.mcpUrl} />
+            </div>
+          </section>
+        )}
+
         {status?.hosted && (
           <section className="card">
             <div className="card-head"><h2>This device</h2></div>
@@ -107,5 +117,18 @@ function GoogleKeys({ onSaved }) {
       {err && <div className="error-box">{err}</div>}
       <div className="row"><button className="btn primary" disabled={!id || !secret}>Save</button><span className="muted" style={{ fontSize: 12 }}>Stored only in Me’s local database.</span></div>
     </form>
+  );
+}
+
+function CopyField({ value }) {
+  const [copied, setCopied] = useState(false);
+  const [shown, setShown] = useState(false);
+  const copy = async () => { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500); };
+  return (
+    <div className="row" style={{ flexWrap: 'nowrap' }}>
+      <input className="input" readOnly value={shown ? value : value.replace(/[^/]+$/, '••••••••••••')} onFocus={(e) => e.target.select()} style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12.5 }} />
+      <button className="btn ghost" onClick={() => setShown((v) => !v)}>{shown ? 'Hide' : 'Show'}</button>
+      <button className="btn primary" onClick={copy}>{copied ? 'Copied' : 'Copy'}</button>
+    </div>
   );
 }
