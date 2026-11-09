@@ -4,8 +4,6 @@ import { api, useApi } from '@/lib/client';
 import { addDays, parse, humanDate, diffDays } from '@/lib/dates';
 import { IconX, IconTrash } from '@/components/Icons';
 import Posture from '@/components/Posture';
-import { useApp } from '@/components/AppProvider';
-import { suggest, best, targetReps, restSeconds } from '@/lib/coach';
 
 const DAY = { upper: 'Upper', lower: 'Lower' };
 const fmtW = (w) => (w === null || w === undefined ? '' : w === 0 ? 'BW' : `${+w.toFixed(1)} lb`);
@@ -75,51 +73,22 @@ function TodayWorkout({ data, reload, onEdit }) {
   return <WorkoutForm data={data} initialDay={plan.status === 'rest' ? plan.nextDay : plan.day} date={today} onSaved={reload} />;
 }
 
-// Past sessions for one exercise, newest first: { weight, reps }.
-const sessionsFor = (data, id) => data.history.flatMap((w) => w.sets.filter((s) => s.exercise_id === id).map((s) => ({ weight: s.weight, reps: s.reps, date: w.date })));
-
 function WorkoutForm({ data, initialDay, date: initialDate, workout, onSaved, onCancel }) {
-  const { showToast } = useApp();
   const [day, setDay] = useState(workout?.day || initialDay);
   const [date, setDate] = useState(workout?.date || initialDate);
   const [vals, setVals] = useState(() => {
     const v = {};
-    for (const s of workout?.sets || []) v[s.exercise_id] = { weight: s.weight ?? '', note: s.note || '', reps: s.reps || null };
+    for (const s of workout?.sets || []) v[s.exercise_id] = { weight: s.weight ?? '', note: s.note || '' };
     return v;
   });
-  const [rest, setRest] = useState(null);           // { until, total }
   const [busy, setBusy] = useState(false);
   const list = data.exercises.filter((e) => e.day === day);
-  const tips = useMemo(() => Object.fromEntries(list.map((e) => [e.id, e.kind === 'weight' ? suggest(e, sessionsFor(data, e.id).filter((x) => !workout || x.date !== workout.date)) : null])), [list, data, workout]);
-  const blankReps = (e) => Array.from({ length: e.sets || 0 }, () => null);
-  const get = (e) => vals[e.id] ?? (workout
-    ? { weight: '', note: '', reps: blankReps(e) }
-    : { weight: e.kind === 'weight' ? (tips[e.id]?.weight ?? data.last[e.id]?.weight ?? '') : '', note: e.kind === 'note' ? (data.last[e.id]?.note || '') : '', reps: blankReps(e) });
+  const get = (e) => vals[e.id] ?? (workout ? { weight: '', note: '' } : { weight: e.kind === 'weight' ? (data.last[e.id]?.weight ?? '') : '', note: e.kind === 'note' ? (data.last[e.id]?.note || '') : '' });
   const set = (e, patch) => setVals((v) => ({ ...v, [e.id]: { ...get(e), ...patch } }));
-
-  // Tap a set when done (starts rest); tap again to count missed reps down.
-  const tapSet = (e, i) => {
-    const t = targetReps(e) ?? 0;
-    const reps = [...(get(e).reps?.length ? get(e).reps : blankReps(e))];
-    const cur = reps[i];
-    if (cur === null || cur === undefined) { reps[i] = t; if (i < reps.length - 1 || list.indexOf(e) < list.length - 1) setRest({ until: Date.now() + restSeconds(e) * 1000, total: restSeconds(e) }); }
-    else reps[i] = cur > 0 ? cur - 1 : null;
-    set(e, { reps });
-  };
-
   const save = async () => {
     setBusy(true);
     try {
-      const sets = list.map((e) => ({ exercise_id: e.id, ...get(e) }));
-      await api('/api/training/workouts', { method: 'POST', body: { id: workout?.id, date, day, sets } });
-      const prs = list.filter((e) => {
-        const w = Number(get(e).weight);
-        if (e.kind !== 'weight' || !w) return false;
-        const prev = best(sessionsFor(data, e.id).filter((x) => !workout || x.date !== workout.date));
-        return Number.isFinite(prev) && w > prev;
-      }).map((e) => `${e.name} ${fmtW(Number(get(e).weight))}`);
-      if (prs.length) showToast(`New PR${prs.length > 1 ? 's' : ''}: ${prs.join(', ')}`);
-      setRest(null);
+      await api('/api/training/workouts', { method: 'POST', body: { id: workout?.id, date, day, sets: list.map((e) => ({ exercise_id: e.id, ...get(e) })) } });
       onSaved();
     } finally { setBusy(false); }
   };
@@ -132,35 +101,21 @@ function WorkoutForm({ data, initialDay, date: initialDate, workout, onSaved, on
         </div>
       </div>
       <div className="card-body">
-        {list.some((e) => e.kind === 'weight' && e.sets) && <p className="muted" style={{ fontSize: 12, margin: '0 0 6px' }}>Tap a set when you finish it (starts the rest timer). Tap again if you missed reps.</p>}
         <div className="lift-rows">
           {list.map((e) => {
             const last = data.last[e.id];
             const v = get(e);
-            const tip = tips[e.id];
             return (
               <div key={e.id} className="lift-row">
                 <div className="lift-name">
                   <b>{e.name}</b>
                   <span>{prescription(e)}{last ? `${prescription(e) ? ' · ' : ''}last ${e.kind === 'weight' && last.weight !== null ? fmtW(last.weight) : `“${last.note}”`}` : ''}</span>
-                  {!workout && tip && tip.why !== 'same as last time' && tip.why !== 'bodyweight' && <span className={`tip-line ${tip.up ? 'up' : tip.down ? 'down' : ''}`}>{fmtW(tip.weight)} · {tip.why}</span>}
                 </div>
                 {e.kind === 'weight' ? (
-                  <div className="lift-controls">
-                    <div className="lift-input">
-                      <button className="icon-btn" onClick={() => set(e, { weight: Math.max(0, (Number(v.weight) || 0) - 5) })} aria-label="Minus 5">−</button>
-                      <input className="input num" inputMode="decimal" value={v.weight} placeholder="lb" onChange={(x) => set(e, { weight: x.target.value })} />
-                      <button className="icon-btn" onClick={() => set(e, { weight: (Number(v.weight) || 0) + 5 })} aria-label="Plus 5">+</button>
-                    </div>
-                    {e.sets > 0 && (
-                      <div className="set-bubbles">
-                        {(v.reps?.length ? v.reps : blankReps(e)).map((r, i) => (
-                          <button key={i} className={`bubble ${r === null || r === undefined ? '' : r >= (targetReps(e) ?? 0) ? 'hit' : 'miss'}`} onClick={() => tapSet(e, i)} aria-label={`Set ${i + 1}`}>
-                            {r ?? targetReps(e) ?? '✓'}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                  <div className="lift-input">
+                    <button className="icon-btn" onClick={() => set(e, { weight: Math.max(0, (Number(v.weight) || 0) - 5) })} aria-label="Minus 5">−</button>
+                    <input className="input num" inputMode="decimal" value={v.weight} placeholder="lb" onChange={(x) => set(e, { weight: x.target.value })} />
+                    <button className="icon-btn" onClick={() => set(e, { weight: (Number(v.weight) || 0) + 5 })} aria-label="Plus 5">+</button>
                   </div>
                 ) : (
                   <input className="input" style={{ maxWidth: 220 }} value={v.note} placeholder={last?.note || 'What you did'} onChange={(x) => set(e, { note: x.target.value })} />
@@ -178,36 +133,7 @@ function WorkoutForm({ data, initialDay, date: initialDate, workout, onSaved, on
           </div>
         </div>
       </div>
-      {rest && <RestTimer rest={rest} onAdd={(s) => setRest((r) => ({ ...r, until: r.until + s * 1000, total: r.total + s }))} onClose={() => setRest(null)} />}
     </section>
-  );
-}
-
-// Floating rest countdown; beeps (and buzzes where supported) when done.
-function RestTimer({ rest, onAdd, onClose }) {
-  const [now, setNow] = useState(Date.now());
-  const fired = useRef(false);
-  useEffect(() => { fired.current = false; }, [rest.until]);
-  useEffect(() => { const t = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(t); }, []);
-  const left = Math.max(0, Math.ceil((rest.until - now) / 1000));
-  useEffect(() => {
-    if (left > 0 || fired.current) return;
-    fired.current = true;
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      [0, 0.25, 0.5].forEach((t) => { const o = ctx.createOscillator(); const g = ctx.createGain(); o.frequency.value = 880; g.gain.value = 0.15; o.connect(g); g.connect(ctx.destination); o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.15); });
-    } catch {}
-    navigator.vibrate?.([200, 100, 200]);
-  }, [left]);
-  const pct = 100 * (1 - left / rest.total);
-  return (
-    <div className={`rest-timer ${left === 0 ? 'done' : ''}`}>
-      <div className="rest-bar" style={{ width: `${pct}%` }} />
-      <span className="rest-label">{left === 0 ? 'Rest done: next set' : 'Rest'}</span>
-      <b>{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</b>
-      <button className="btn ghost" onClick={() => onAdd(30)}>+30s</button>
-      <button className="icon-btn" onClick={onClose} aria-label="Close timer"><IconX /></button>
-    </div>
   );
 }
 
@@ -216,7 +142,7 @@ function SessionSummary({ data, w }) {
   return (
     <ul className="summary">
       {w.sets.filter((s) => byId[s.exercise_id]).sort((a, b) => byId[a.exercise_id].sort - byId[b.exercise_id].sort).map((s) => (
-        <li key={s.exercise_id}><span>{byId[s.exercise_id].name}</span><b>{s.weight !== null ? fmtW(s.weight) : ''}{s.reps?.some((r) => r !== null) ? ` × ${s.reps.map((r) => r ?? '–').join('/')}` : ''}{s.note ? `${s.weight !== null ? ' · ' : ''}${s.note}` : ''}</b></li>
+        <li key={s.exercise_id}><span>{byId[s.exercise_id].name}</span><b>{s.weight !== null ? fmtW(s.weight) : ''}{s.note ? `${s.weight !== null ? ' · ' : ''}${s.note}` : ''}</b></li>
       ))}
     </ul>
   );

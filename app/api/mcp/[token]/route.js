@@ -163,17 +163,17 @@ const handler = createMcpHandler((server) => {
   });
 
   server.registerTool('log_workout', {
-    title: 'Log workout', description: 'Record a lifting session. Each entry names an exercise from get_training with the weight in lb (0 = bodyweight), optional reps done per set (e.g. [5,5,4]), and/or a note.',
+    title: 'Log workout', description: 'Record a lifting session. Each entry names an exercise from get_training with the weight in lb (0 = bodyweight) and/or a note.',
     inputSchema: z.object({
       day: z.enum(['upper', 'lower']), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-      entries: z.array(z.object({ exercise: z.string(), weight: z.number().min(0).optional(), reps: z.array(z.number().int().min(0)).optional(), note: z.string().optional() })).min(1),
+      entries: z.array(z.object({ exercise: z.string(), weight: z.number().min(0).optional(), note: z.string().optional() })).min(1),
     }),
   }, async ({ day, date, entries }) => {
     const d = await trainingSnapshot();
     const find = (n) => d.exercises.find((e) => e.day === day && e.name.toLowerCase() === n.toLowerCase()) || d.exercises.find((e) => e.day === day && e.name.toLowerCase().includes(n.toLowerCase()));
     const missing = entries.filter((x) => !find(x.exercise)).map((x) => x.exercise);
     if (missing.length) return fail(`Unknown ${day} exercise(s): ${missing.join(', ')}. Options: ${d.exercises.filter((e) => e.day === day).map((e) => e.name).join(', ')}`);
-    await saveWorkout({ day, date: date || todayStr(), sets: entries.map((x) => ({ exercise_id: find(x.exercise).id, weight: x.weight ?? '', reps: x.reps, note: x.note || '' })) });
+    await saveWorkout({ day, date: date || todayStr(), sets: entries.map((x) => ({ exercise_id: find(x.exercise).id, weight: x.weight ?? '', note: x.note || '' })) });
     return text(`Logged ${day} for ${date || todayStr()} (${entries.length} exercises).`);
   });
 
