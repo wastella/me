@@ -83,17 +83,6 @@ function Tasks() {
         {p && !p.is_inbox && <ProjectTools project={p} onDeleted={() => go('today')} />}
       </>
     );
-  } else if (view === 'school') {
-    title = 'School';
-    const school = tasks.filter((t) => t.source === 'school' && !t.parent_id).sort(sortTasks);
-    const groups = {};
-    for (const t of school) (groups[t.due_date || ''] ||= []).push(t);
-    body = Object.keys(groups).length ? Object.entries(groups).map(([d, list]) => (
-      <div key={d}>
-        <div className="group-title">{d ? humanDate(d) : 'No date'} <span className="count">{d ? parse(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ''}{list.length ? ` · ${list.length}` : ''}</span></div>
-        <TaskList tasks={list} allTasks={tasks} />
-      </div>
-    )) : <div className="empty">No school assignments yet. Connect your classes in Settings → School.</div>;
   } else if (view === 'done') {
     title = 'Completed';
     body = <History />;
@@ -104,7 +93,6 @@ function Tasks() {
       <aside className="views">
         <ViewBtn on={view === 'today'} onClick={() => go('today')} n={counts.today}>Today</ViewBtn>
         <ViewBtn on={view === 'upcoming'} onClick={() => go('upcoming')}>Upcoming</ViewBtn>
-        <ViewBtn on={view === 'school'} onClick={() => go('school')} n={tasks.filter((t) => t.source === 'school').length || null}>School</ViewBtn>
         <ViewBtn on={view === 'done'} onClick={() => go('done')}>Completed</ViewBtn>
         <div className="label">Projects <NewProject onCreated={(p) => { app.reloadTasks(); go('p:' + p.id); }} /></div>
         {projects.map((p) => (

@@ -504,7 +504,6 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
   .h-sched { order: 1; } .h-tasks { order: 2; } .h-train { order: 3; } .h-mail { order: 4; }
 }
 @media (max-width: 1000px) { .tasks-layout { grid-template-columns: minmax(0, 1fr); } .views { min-width: 0; max-width: 100%; } }
-.task-meta .course { color: var(--faint); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Training coach */
 .lift-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }

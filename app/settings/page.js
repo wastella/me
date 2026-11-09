@@ -67,8 +67,6 @@ function Settings() {
           </div>
         </section>
 
-        <School />
-
         {status?.push?.enabled && <Notifications publicKey={status.push.publicKey} />}
 
         {status?.shortcut && (
@@ -156,62 +154,6 @@ function CopyField({ value, plain, secretLabel }) {
   );
 }
 
-function School() {
-  const { projects, reloadTasks } = useApp();
-  const q = useApi('/api/school');
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState(null);
-  const [feed, setFeed] = useState({ name: 'CSU Blackboard', url: '' });
-  const d = q.data;
-  const act = async (b, reload = true) => {
-    setBusy(true); setMsg(null);
-    try { const r = await api('/api/school', { method: 'POST', body: b }); if (r && 'added' in r) setMsg(summary(r)); if (reload) { q.reload(); reloadTasks(); } }
-    catch (e) { setMsg(e.message); }
-    setBusy(false);
-  };
-  const summary = (r) => `${r.added} new, ${r.updated} updated from ${r.found} items${r.errors?.length ? ` · ${r.errors.join(' · ')}` : ''}`;
-  if (!d) return null;
-  return (
-    <section className="card">
-      <div className="card-head"><h2><span className={`status-dot ${d.last_sync && !d.last_result?.errors?.length ? 'on' : ''}`} />School</h2>
-        <button className="btn ghost" disabled={busy} onClick={() => act({ action: 'sync' })}>{busy ? <span className="spin" /> : 'Sync now'}</button></div>
-      <div className="card-body">
-        <p>Upcoming assignments become tasks in the project you pick per course. Past-due work isn’t imported, and if you move a task’s date the sync leaves it alone.{d.last_sync ? ` Last sync ${new Date(d.last_sync).toLocaleString()}: ${summary(d.last_result || { added: 0, updated: 0, found: 0 })}.` : ''}</p>
-        {msg && <p style={{ color: 'var(--text)' }}>{msg}</p>}
-        <label className="row" style={{ fontSize: 13, marginBottom: 10 }}><input type="checkbox" checked={!!d.classroom} onChange={(e) => act({ action: 'classroom', on: e.target.checked })} /> Google Classroom (read from your Google Calendar)</label>
-        {d.feeds.map((f) => (
-          <div key={f.id} className="row" style={{ justifyContent: 'space-between', padding: '6px 0', borderTop: '1px solid var(--line)' }}>
-            <span><b style={{ color: 'var(--text)' }}>{f.name}</b> <span className="muted">· {f.host}</span></span>
-            <button className="btn ghost danger" onClick={() => confirm(`Remove ${f.name}? Tasks already imported stay.`) && act({ action: 'remove_feed', id: f.id })}>Remove</button>
-          </div>
-        ))}
-        <form className="row" style={{ flexWrap: 'nowrap', margin: '10px 0 4px' }} onSubmit={(e) => { e.preventDefault(); act({ action: 'add_feed', ...feed }); setFeed({ ...feed, url: '' }); }}>
-          <select className="input" style={{ width: 170 }} value={feed.name} onChange={(e) => setFeed({ ...feed, name: e.target.value })}>
-            {['CSU Blackboard', 'Tri-C Brightspace', 'Other'].map((n) => <option key={n}>{n}</option>)}
-          </select>
-          <input className="input" placeholder="Paste the calendar link (https:// or webcal://)" value={feed.url} onChange={(e) => setFeed({ ...feed, url: e.target.value })} autoComplete="off" />
-          <button className="btn primary" disabled={!feed.url.trim() || busy}>Add</button>
-        </form>
-        <p className="muted" style={{ fontSize: 12 }}>Blackboard: Calendar → gear icon → Share calendar. Brightspace: Calendar → Subscribe → All courses.</p>
-        {d.courses.length > 0 && (
-          <>
-            <div className="group-title">Courses</div>
-            {d.courses.map((c) => (
-              <div key={c.name} className="row" style={{ justifyContent: 'space-between', padding: '6px 0', flexWrap: 'nowrap', gap: 12 }}>
-                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name} <span className="muted" style={{ fontSize: 12 }}>· {c.source}</span></span>
-                <select className="input" style={{ width: 170, flex: 'none' }} value={c.project || ''} onChange={(e) => act({ action: 'map', course: c.name, project: e.target.value || null })}>
-                  <option value="">School (default)</option>
-                  {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  <option value="skip">Don’t import</option>
-                </select>
-              </div>
-            ))}
-          </>
-        )}
-      </div>
-    </section>
-  );
-}
 
 const b64ToBytes = (b) => { const s = atob((b + '='.repeat((4 - (b.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, (c) => c.charCodeAt(0)); };
 
