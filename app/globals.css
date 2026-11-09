@@ -505,3 +505,20 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 }
 @media (max-width: 1000px) { .tasks-layout { grid-template-columns: minmax(0, 1fr); } .views { min-width: 0; max-width: 100%; } }
 .task-meta .course { color: var(--faint); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Training coach */
+.lift-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.set-bubbles { display: flex; gap: 5px; }
+.bubble { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--line-2); background: transparent; color: var(--faint); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; padding: 0; }
+.bubble.hit { background: var(--ok); border-color: var(--ok); color: #fff; }
+.bubble.miss { background: color-mix(in srgb, var(--p2) 18%, transparent); border-color: var(--p2); color: var(--p2); }
+.tip-line { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.tip-line.up { color: var(--ok); }
+.tip-line.down { color: var(--p2); }
+.rest-timer { position: fixed; left: 50%; transform: translateX(-50%); bottom: 22px; z-index: 70; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; background: var(--panel); border: 1px solid var(--line-2); border-radius: 14px; box-shadow: 0 12px 34px rgba(0,0,0,.35); overflow: hidden; min-width: 260px; }
+.rest-timer b { font-size: 20px; font-variant-numeric: tabular-nums; font-weight: 650; }
+.rest-label { color: var(--muted); font-size: 13px; }
+.rest-bar { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--accent); transition: width .25s linear; }
+.rest-timer.done { border-color: var(--ok); }
+.rest-timer.done .rest-label { color: var(--ok); }
+@media (max-width: 760px) { .rest-timer { bottom: calc(84px + env(safe-area-inset-bottom)); } .lift-controls { align-items: stretch; } }
