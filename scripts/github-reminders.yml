@@ -1,0 +1,23 @@
+# Pings Me every 15 minutes so it can send reminders.
+# Not active yet. To turn notifications on:
+#   1. gh auth refresh -h github.com -s workflow
+#   2. zsh scripts/setup-notifications.sh   (stores the keys + CRON_SECRET)
+#   3. mkdir -p .github/workflows && git mv scripts/github-reminders.yml .github/workflows/reminders.yml
+#   4. commit and push
+name: Me reminders
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Run reminders
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -fsS -X POST https://me-omega-green.vercel.app/api/cron \
+            -H "Authorization: Bearer $CRON_SECRET" --max-time 60
