@@ -40,6 +40,7 @@ export default function TaskItem({ task, showProject = true, sub = false, drag }
               {task.recurring && <IconRepeat style={{ width: 12, height: 12, marginLeft: 4, verticalAlign: -2 }} />}
             </span>
           )}
+          {task.source === 'school' && task.source_course && <span className="course">{task.source_course}</span>}
           {task.deadline && <span className={diffDays(task.deadline, todayStr()) < 0 ? 'overdue' : ''}>⚑ {humanDate(task.deadline)}</span>}
           {showProject && project && (
             <span className="proj"><i style={{ background: colorHex(project.color) }} />{project.name}</span>
