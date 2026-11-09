@@ -7,7 +7,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { db } from '@/lib/db';
 import { snapshot as taskSnapshot, createTask, updateTask, completeTask, deleteTask } from '@/lib/tasks';
 import { snapshot as trainingSnapshot, saveWorkout, togglePosture } from '@/lib/training';
-import { listEvents, createEvent, googleConnected } from '@/lib/google';
+import { listEvents, listCalendars, createEvent, deleteEvent, googleConnected } from '@/lib/google';
 import { todayStr, addDays } from '@/lib/dates';
 import { zonedISO, localTime, localDate } from '@/lib/tz';
 
@@ -29,8 +29,10 @@ function shapeTask(t, byId) {
 }
 async function events(start, end) {
   if (!(await googleConnected())) return [];
-  const list = await listEvents(zonedISO(start), zonedISO(addDays(end, 1)));
+  const [list, cals] = await Promise.all([listEvents(zonedISO(start), zonedISO(addDays(end, 1))), listCalendars()]);
+  const writable = new Set(cals.filter((c) => c.writable).map((c) => c.id));
   return list.filter((e) => !e.declined).map((e) => ({
+    id: e.id, calendar_id: e.calendarId, can_delete: writable.has(e.calendarId) || undefined,
     title: e.title, calendar: e.calendar, location: e.location || undefined,
     date: e.allDay ? e.start : localDate(e.start),
     time: e.allDay ? 'all day' : `${localTime(e.start)} – ${localTime(e.end)}`,
@@ -130,7 +132,7 @@ const handler = createMcpHandler((server) => {
   }, async ({ id }) => { await deleteTask(id); return text('Deleted.'); });
 
   server.registerTool('get_calendar', {
-    title: 'Calendar', description: "Events from the user's Google calendars between two dates (inclusive, YYYY-MM-DD, user's timezone).",
+    title: 'Calendar', description: "Events from the user's Google calendars between two dates (inclusive, YYYY-MM-DD, user's timezone). Each event has id and calendar_id (needed for delete_event); can_delete marks calendars the user can edit.",
     inputSchema: z.object({ start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }),
   }, async ({ start_date, end_date }) => text(await events(start_date, end_date)));
 
@@ -147,6 +149,23 @@ const handler = createMcpHandler((server) => {
       await createEvent({ title, start: `${date}T${start_time}:00`, end: `${date}T${endT}:00`, location });
       return text(`Added "${title}" on ${date}, ${start_time}–${endT}.`);
     } catch (e) { return fail(e.message); }
+  });
+
+  server.registerTool('delete_event', {
+    title: 'Delete event',
+    description: "Delete an event from the user's Google Calendar, using id and calendar_id from get_calendar. For a repeating event this removes only that occurrence. Always confirm with the user (title and date) before deleting.",
+    inputSchema: z.object({ id: z.string().min(1), calendar_id: z.string().min(1) }),
+  }, async ({ id, calendar_id }) => {
+    try {
+      const cal = (await listCalendars()).find((c) => c.id === calendar_id);
+      if (!cal) return fail('No calendar with that calendar_id. Get it from get_calendar.');
+      if (!cal.writable) return fail(`"${cal.name}" is a read-only calendar for this account, so its events can't be deleted here.`);
+      await deleteEvent(calendar_id, id);
+      return text(`Deleted from ${cal.name}.`);
+    } catch (e) {
+      if (e.status === 404 || e.status === 410) return fail('That event no longer exists (it may already be deleted).');
+      return fail(e.message);
+    }
   });
 
   server.registerTool('get_training', {
