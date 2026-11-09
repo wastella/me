@@ -20,6 +20,8 @@ export default function AppProvider({ children }) {
   // In the Mac app, leave room for the window buttons (top-left).
   useEffect(() => {
     if (/Electron/.test(navigator.userAgent)) document.documentElement.classList.add('desktop');
+    // Service worker for notifications (not needed inside the Mac app).
+    else if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   }, []);
 
   const showToast = useCallback((msg, action) => {

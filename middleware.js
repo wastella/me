@@ -3,8 +3,8 @@ import { COOKIE, verifySession, authRequired } from './lib/session';
 
 // Hosted: every page and API needs a valid session, except the sign-in flow
 // and static assets. Local dev: only requests to localhost are accepted.
-// /api/mcp/<secret> checks its own token (Claude connects without a cookie).
-const PUBLIC = [/^\/api\/mcp\//, /^\/login$/, /^\/api\/auth\//, /^\/api\/google\/callback$/, /^\/manifest\.webmanifest$/, /^\/(icon|apple-touch-icon)/, /^\/favicon/];
+// /api/mcp, /api/cron and /api/quick check their own secrets (no cookie).
+const PUBLIC = [/^\/api\/mcp\//, /^\/api\/cron$/, /^\/api\/quick$/, /^\/sw\.js$/, /^\/login$/, /^\/api\/auth\//, /^\/api\/google\/callback$/, /^\/manifest\.webmanifest$/, /^\/(icon|apple-touch-icon)/, /^\/favicon/];
 const LOCAL_HOSTS = new Set(['localhost:3737', '127.0.0.1:3737']);
 
 export async function middleware(req) {

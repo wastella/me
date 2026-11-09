@@ -522,3 +522,4 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 .rest-timer.done { border-color: var(--ok); }
 .rest-timer.done .rest-label { color: var(--ok); }
 @media (max-width: 760px) { .rest-timer { bottom: calc(84px + env(safe-area-inset-bottom)); } .lift-controls { align-items: stretch; } }
+.pref-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }

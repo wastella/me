@@ -1,5 +1,5 @@
 'use client';
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useApp } from '@/components/AppProvider';
 import { api, useApi } from '@/lib/client';
@@ -69,6 +69,27 @@ function Settings() {
 
         <School />
 
+        {status?.push?.enabled && <Notifications publicKey={status.push.publicKey} />}
+
+        {status?.shortcut && (
+          <section className="card">
+            <div className="card-head"><h2>Siri</h2></div>
+            <div className="card-body">
+              <p>Say “Hey Siri, add to Me” to add a task (quick-add works: “call mom tomorrow 5pm p1”). Set it up once on your iPhone:</p>
+              <ol className="steps">
+                <li>Open <b>Shortcuts</b> → <b>+</b>. Name it <b>Add to Me</b>.</li>
+                <li>Add <b>Dictate Text</b>.</li>
+                <li>Add <b>Get Contents of URL</b> with the URL below. Tap <b>Show More</b>: Method <b>POST</b>; Headers: <code>Authorization</code> = <code>Bearer</code> + a space + the key below; Request Body <b>JSON</b> with key <code>text</code> = <i>Dictated Text</i>.</li>
+                <li>Add <b>Get Dictionary Value</b> → key <code>message</code>, then <b>Speak Text</b> (optional).</li>
+              </ol>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <CopyField value={status.shortcut.url} plain />
+                <CopyField value={status.shortcut.token} secretLabel="Key" />
+              </div>
+            </div>
+          </section>
+        )}
+
         {status?.mcpUrl && (
           <section className="card">
             <div className="card-head"><h2>Claude connector</h2></div>
@@ -122,14 +143,14 @@ function GoogleKeys({ onSaved }) {
   );
 }
 
-function CopyField({ value }) {
+function CopyField({ value, plain, secretLabel }) {
   const [copied, setCopied] = useState(false);
-  const [shown, setShown] = useState(false);
+  const [shown, setShown] = useState(!!plain);
   const copy = async () => { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500); };
   return (
     <div className="row" style={{ flexWrap: 'nowrap' }}>
-      <input className="input" readOnly value={shown ? value : value.replace(/[^/]+$/, '••••••••••••')} onFocus={(e) => e.target.select()} style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12.5 }} />
-      <button className="btn ghost" onClick={() => setShown((v) => !v)}>{shown ? 'Hide' : 'Show'}</button>
+      <input className="input" readOnly value={shown ? value : secretLabel ? `${secretLabel}: ••••••••••••` : value.replace(/[^/]+$/, '••••••••••••')} onFocus={(e) => e.target.select()} style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12.5 }} />
+      {!plain && <button className="btn ghost" onClick={() => setShown((v) => !v)}>{shown ? 'Hide' : 'Show'}</button>}
       <button className="btn primary" onClick={copy}>{copied ? 'Copied' : 'Copy'}</button>
     </div>
   );
@@ -186,6 +207,65 @@ function School() {
               </div>
             ))}
           </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+const b64ToBytes = (b) => { const s = atob((b + '='.repeat((4 - (b.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(s, (c) => c.charCodeAt(0)); };
+
+function Notifications({ publicKey }) {
+  const [state, setState] = useState('checking');   // checking | unsupported | needs-home | off | on | denied
+  const [msg, setMsg] = useState(null);
+  const prefsQ = useApi('/api/settings');
+  useEffect(() => {
+    (async () => {
+      const ios = /iPhone|iPad/.test(navigator.userAgent);
+      const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+      if (/Electron/.test(navigator.userAgent)) return setState('unsupported');
+      if (ios && !standalone) return setState('needs-home');
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return setState('unsupported');
+      if (Notification.permission === 'denied') return setState('denied');
+      const reg = await navigator.serviceWorker.ready;
+      setState((await reg.pushManager.getSubscription()) ? 'on' : 'off');
+    })().catch(() => setState('unsupported'));
+  }, []);
+  const turnOn = async () => {
+    setMsg(null);
+    try {
+      if ((await Notification.requestPermission()) !== 'granted') return setState('denied');
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(publicKey) });
+      await api('/api/push/subscribe', { method: 'POST', body: { subscription: sub.toJSON(), device: /iPhone/.test(navigator.userAgent) ? 'iPhone' : navigator.platform } });
+      setState('on');
+    } catch (e) { setMsg(e.message); }
+  };
+  const turnOff = async () => {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) { await api('/api/push/subscribe', { method: 'DELETE', body: { endpoint: sub.endpoint } }); await sub.unsubscribe(); }
+    setState('off');
+  };
+  const test = async () => { const r = await api('/api/push/test', { method: 'POST' }); setMsg(r.sent ? 'Sent. It should arrive in a few seconds.' : 'No devices are signed up yet.'); };
+  const prefs = prefsQ.data?.pushPrefs;
+  const setPref = async (k, v) => { const next = { ...prefs, [k]: v }; prefsQ.setData({ pushPrefs: next }); await api('/api/settings', { method: 'PATCH', body: { pushPrefs: next } }); };
+  return (
+    <section className="card">
+      <div className="card-head"><h2><span className={`status-dot ${state === 'on' ? 'on' : ''}`} />Notifications</h2></div>
+      <div className="card-body">
+        {state === 'needs-home' && <p>On iPhone, notifications work from the home-screen app: in Safari tap <b>Share → Add to Home Screen</b>, open Me from there, and come back to this page.</p>}
+        {state === 'unsupported' && <p>This device can’t receive Me notifications here. Turn them on from the Me app on your iPhone (home-screen version) or in Chrome/Safari on a computer.</p>}
+        {state === 'denied' && <p>Notifications are blocked for Me. On iPhone: Settings → Notifications → Me → Allow Notifications, then come back.</p>}
+        {state === 'off' && <><p>Get a morning rundown, reminders for tasks with a time, a lift-day nudge and an evening posture reminder.</p><button className="btn primary" onClick={turnOn}>Turn on for this device</button></>}
+        {state === 'on' && <div className="row"><span className="muted">On for this device.</span><button className="btn" onClick={test}>Send a test</button><button className="btn ghost danger" onClick={turnOff}>Turn off here</button></div>}
+        {msg && <p style={{ marginTop: 8 }}>{msg}</p>}
+        {prefs && (
+          <div className="pref-list">
+            {[['morning', 'Morning rundown (7am)'], ['tasks', 'Tasks with a time (shortly before)'], ['lift', 'Lift day nudge (4pm if not logged)'], ['posture', 'Posture reminder (8pm if not done)']].map(([k, label]) => (
+              <label key={k} className="row" style={{ fontSize: 13 }}><input type="checkbox" checked={prefs[k] !== false} onChange={(e) => setPref(k, e.target.checked)} /> {label}</label>
+            ))}
+          </div>
         )}
       </div>
     </section>
