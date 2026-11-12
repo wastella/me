@@ -80,6 +80,7 @@ function Settings() {
                 <li>Add <b>Get Contents of URL</b> with the URL below. Tap <b>Show More</b>: Method <b>POST</b>; Headers: <code>Authorization</code> = <code>Bearer</code> + a space + the key below; Request Body <b>JSON</b> with key <code>text</code> = <i>Dictated Text</i>.</li>
                 <li>Add <b>Get Dictionary Value</b> → key <code>message</code>, then <b>Speak Text</b> (optional).</li>
               </ol>
+              <p>For notes, duplicate that shortcut, name it <b>Note to Me</b>, and add a second key to the JSON body: <code>kind</code> = <code>note</code>. Start with a category name to file it (“Ideas: …” or “#Ideas …”); otherwise it lands in Unsorted.</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <CopyField value={status.shortcut.url} plain />
                 <CopyField value={status.shortcut.token} secretLabel="Key" />
@@ -92,7 +93,7 @@ function Settings() {
           <section className="card">
             <div className="card-head"><h2>Claude connector</h2></div>
             <div className="card-body">
-              <p>Lets Claude (on your Mac, iPhone, or in Claude Code) read and change your tasks, calendar and training, using your Claude plan. In claude.ai open <b style={{ color: 'var(--text)' }}>Settings → Connectors → Add custom connector</b>, name it <b style={{ color: 'var(--text)' }}>Me</b>, and paste this URL. Keep it private: anyone with it can use your Me.</p>
+              <p>Lets Claude (on your Mac, iPhone, or in Claude Code) read and change your tasks, calendar, notes and training, using your Claude plan. In claude.ai open <b style={{ color: 'var(--text)' }}>Settings → Connectors → Add custom connector</b>, name it <b style={{ color: 'var(--text)' }}>Me</b>, and paste this URL. Keep it private: anyone with it can use your Me.</p>
               <CopyField value={status.mcpUrl} />
             </div>
           </section>

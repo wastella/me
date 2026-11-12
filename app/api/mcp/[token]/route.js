@@ -1,5 +1,5 @@
 // "Ask Me": an MCP server so Claude (claude.ai, the Claude apps, Claude Code)
-// can read and change your tasks, calendar and training. The URL carries a
+// can read and change your tasks, calendar, notes and training. The URL carries a
 // long secret (MCP_TOKEN); without it every request is refused.
 import { createMcpHandler } from 'mcp-handler';
 import { z } from 'zod';
@@ -7,6 +7,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { db } from '@/lib/db';
 import { snapshot as taskSnapshot, createTask, updateTask, completeTask, deleteTask } from '@/lib/tasks';
 import { snapshot as trainingSnapshot, saveWorkout, togglePosture } from '@/lib/training';
+import { snapshot as notesSnapshot, createNote, updateNote, deleteNote, createCategory, categoryByName } from '@/lib/notes';
 import { listEvents, listCalendars, createEvent, deleteEvent, googleConnected } from '@/lib/google';
 import { todayStr, addDays } from '@/lib/dates';
 import { zonedISO, localTime, localDate } from '@/lib/tz';
@@ -167,6 +168,50 @@ const handler = createMcpHandler((server) => {
       return fail(e.message);
     }
   });
+
+  server.registerTool('list_notes', {
+    title: 'Notes', description: "The user's notes to self, newest first, with their categories. Filter by category name or search text. The first line of a note is its title.",
+    inputSchema: z.object({ category: z.string().optional().describe('Category name, or "Unsorted"'), search: z.string().optional(), limit: z.number().int().min(1).max(200).default(50) }),
+  }, async ({ category, search, limit }) => {
+    const d = await notesSnapshot();
+    const byId = Object.fromEntries(d.categories.map((c) => [c.id, c.name]));
+    let notes = d.notes;
+    if (category) {
+      if (/^unsorted$/i.test(category)) notes = notes.filter((n) => !byId[n.category_id]);
+      else { const c = await categoryByName(category); if (!c) return fail(`No category "${category}". Categories: ${d.categories.map((x) => x.name).join(', ') || 'none yet'}`); notes = notes.filter((n) => n.category_id === c.id); }
+    }
+    if (search) { const t = search.toLowerCase(); notes = notes.filter((n) => n.body.toLowerCase().includes(t)); }
+    return text({
+      categories: d.categories.map((c) => c.name),
+      notes: notes.slice(0, limit).map((n) => ({ id: n.id, category: byId[n.category_id] || 'Unsorted', pinned: n.pinned ? true : undefined, updated: n.updated_at.slice(0, 10), note: n.body })),
+    });
+  });
+
+  server.registerTool('add_note', {
+    title: 'Add note', description: 'Save a note to self. Give a category name to file it; a new name creates that category. Put a short title on the first line.',
+    inputSchema: z.object({ note: z.string().min(1), category: z.string().optional() }),
+  }, async ({ note, category }) => {
+    const cat = category ? await createCategory({ name: category }) : null;
+    await createNote({ body: note, category_id: cat?.id, source: 'claude' });
+    return text(`Saved${cat ? ` to ${cat.name}` : ''}.`);
+  });
+
+  server.registerTool('update_note', {
+    title: 'Update note', description: "Change a note's text, move it to another category (a new name creates it; \"Unsorted\" clears it), or pin it. Get ids from list_notes.",
+    inputSchema: z.object({ id: z.string().min(1), note: z.string().optional(), category: z.string().optional(), pinned: z.boolean().optional() }),
+  }, async ({ id, note, category, pinned }) => {
+    const patch = {};
+    if (note !== undefined) patch.body = note;
+    if (pinned !== undefined) patch.pinned = pinned;
+    if (category !== undefined) patch.category_id = /^unsorted$/i.test(category) ? null : (await createCategory({ name: category })).id;
+    try { await updateNote(id, patch); } catch (e) { return fail(e.message); }
+    return text('Updated.');
+  });
+
+  server.registerTool('delete_note', {
+    title: 'Delete note', description: 'Permanently delete a note. Confirm with the user (quote its first line) before deleting.',
+    inputSchema: z.object({ id: z.string().min(1) }),
+  }, async ({ id }) => { await deleteNote(id); return text('Deleted.'); });
 
   server.registerTool('get_training', {
     title: 'Training', description: "The user's upper/lower lifting split (every other day, alternating) and daily posture routine: today's plan, each exercise with sets×reps and last weight, and recent sessions.",

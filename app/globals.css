@@ -505,3 +505,53 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 }
 @media (max-width: 1000px) { .tasks-layout { grid-template-columns: minmax(0, 1fr); } .views { min-width: 0; max-width: 100%; } }
 .pref-list { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
+
+/* Notes */
+.notes-tools { display: flex; align-items: center; gap: 6px; }
+.notes-search { width: 220px; }
+.notes-layout { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 22px; align-items: start; }
+.cat-rail { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 16px; }
+.cat { display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); text-align: left; font-size: 13.5px; }
+.cat:hover { background: var(--panel-2); color: var(--text); }
+.cat.on { background: var(--panel-2); color: var(--text); }
+.cat i { width: 8px; height: 8px; border-radius: 3px; flex: none; }
+.cat span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat em { font-style: normal; font-size: 11.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+.cat.add { color: var(--faint); }
+.cat-new .input { padding: 5px 9px; font-size: 13px; }
+.composer { padding: 12px 14px 10px; }
+.composer.listening { border-color: var(--text); }
+.composer-text { width: 100%; border: 0; outline: 0; background: transparent; resize: none; font-size: 14.5px; line-height: 1.5; min-height: 44px; display: block; }
+.composer-text.big { font-size: 15px; min-height: 140px; max-height: 60vh; overflow: auto; }
+.composer-bar, .note-editor-head { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.composer-bar .spacer, .note-editor-head .spacer { flex: 1; }
+.cat-select { width: auto; padding: 5px 8px; font-size: 12.5px; }
+.icon-btn.mic svg { width: 18px; height: 18px; }
+.icon-btn.mic.on { color: var(--bg); background: var(--p1); animation: mic-pulse 1.4s ease-in-out infinite; }
+.icon-btn.on { color: var(--text); background: var(--panel-2); }
+@keyframes mic-pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--p1) 25%, transparent); } }
+.listening-dot { font-size: 12px; color: var(--p1); }
+.hint { font-size: 12px; color: var(--muted); }
+.notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; align-items: start; }
+.note-card { text-align: left; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; color: inherit; font: inherit; cursor: pointer; }
+.note-card:hover { border-color: var(--line-2); }
+.note-title { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; display: flex; gap: 6px; align-items: flex-start; }
+.note-title .pin { width: 13px; height: 13px; flex: none; margin-top: 3px; color: var(--muted); }
+.note-rest { color: var(--muted); font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+.note-meta { display: flex; align-items: center; gap: 10px; font-size: 11.5px; color: var(--faint); margin-top: 2px; }
+.note-meta .proj { display: inline-flex; align-items: center; gap: 5px; }
+.note-meta .proj i { width: 7px; height: 7px; border-radius: 2px; }
+.note-editor-head { margin: 0; }
+.note-foot { font-size: 11.5px; color: var(--faint); }
+@media (max-width: 760px) {
+  .notes-tools { width: 100%; }
+  .notes-search { flex: 1; width: auto; }
+  .notes-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .cat-rail { position: static; flex-direction: row; overflow-x: auto; gap: 6px; margin: 0 -2px; padding: 0 2px 2px; scrollbar-width: none; }
+  .cat { flex: none; border: 1px solid var(--line-2); border-radius: 999px; padding: 5px 11px; }
+  .cat span { overflow: visible; }
+  .cat-new .input { width: 150px; }
+  .notes-grid { grid-template-columns: minmax(0, 1fr); }
+  .composer-text, .notes-search, .cat-select, .cat-new .input { font-size: 16px; }   /* stops iOS zooming in */
+  .composer-text.big { min-height: 40vh; }
+}

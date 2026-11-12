@@ -19,3 +19,5 @@ export const IconRefresh = P(<><path d="M20 11a8 8 0 0 0-14.6-4.5L4 8M4 4v4h4" /
 export const IconMailUnread = P(<><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m3.5 7 8.5 6 8.5-6" /><circle cx="19" cy="5" r="3" fill="currentColor" /></>);
 export const IconTask = P(<><rect x="4" y="4" width="16" height="16" rx="4" /><path d="m8.5 12 2.5 2.5 4.5-5" /></>);
 export const IconLift = P(<><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11" /></>);
+export const IconNote = P(<><path d="M6 3.5h8.5L19 8v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19V5a1.5 1.5 0 0 1 1-1.5z" /><path d="M14 3.5V8h5M8.5 12.5h7M8.5 16h5" /></>);
+export const IconPin = P(<><path d="M9 4h6l-1 5 3.5 3.5h-11L10 9z" /><path d="M12 12.5V20" /></>);
