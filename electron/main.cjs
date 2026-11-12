@@ -1,7 +1,7 @@
 // Me desktop shell: a native window onto the hosted Me, so the Mac and phone
 // share the same data. Set ME_URL=http://localhost:3737 (with `npm run dev`
 // running) to point it at a local copy instead.
-const { app, BrowserWindow, shell, Menu, nativeTheme, session, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, Menu, nativeTheme, session } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -93,12 +93,6 @@ async function updateBadge() {
 app.on('second-instance', () => show());
 app.on('activate', () => show());
 app.on('before-quit', () => { quitting = true; });
-
-// macOS Dictation, same as Edit → Start Dictation, in whatever field has focus.
-ipcMain.on('me:dictate', (e) => {
-  if (!win || e.sender !== win.webContents || !isOurs(e.senderFrame?.url || '')) return;
-  Menu.sendActionToFirstResponder('startDictation:');
-});
 
 app.whenReady().then(() => {
   buildMenu();

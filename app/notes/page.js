@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, useApi, relTime } from '@/lib/client';
 import { colorHex } from '@/lib/colors';
 import { IconPin, IconTrash, IconX } from '@/components/Icons';
-import { useDictation, joinSpoken, MicButton } from '@/components/Dictate';
 
 const ALL = 'all';
 const UNSORTED = 'unsorted';
@@ -79,7 +78,7 @@ export default function Notes() {
               {shown.map((n) => <NoteCard key={n.id} note={n} cat={catById[n.category_id]} showCat={view === ALL} onOpen={() => setOpen(n)} />)}
             </div>
           ) : (
-            <div className="empty">{term ? 'No notes match.' : current ? `Nothing in ${current.name} yet.` : 'No notes yet. Type or tap the mic above.'}</div>
+            <div className="empty">{term ? 'No notes match.' : current ? `Nothing in ${current.name} yet.` : 'No notes yet. Write one above.'}</div>
           )}
         </div>
       </div>
@@ -118,11 +117,10 @@ function CategoryRail({ cats, counts, view, setView, onAdd, adding, setAdding })
   );
 }
 
-function useSpokenText(initial) {
+function useText(initial) {
   const [text, setText] = useState(initial);
   const ref = useRef(null);
-  const dictation = useDictation({ fieldRef: ref, append: (p) => setText((t) => joinSpoken(t, p)) });
-  return { text, setText, ref, dictation };
+  return { text, setText, ref };
 }
 
 function CategorySelect({ cats, value, onChange }) {
@@ -135,15 +133,14 @@ function CategorySelect({ cats, value, onChange }) {
 }
 
 function Composer({ cats, defaultCat, onSaved }) {
-  const { text, setText, ref, dictation } = useSpokenText('');
+  const { text, setText, ref } = useText('');
   const [cat, setCat] = useState(defaultCat);
   const [busy, setBusy] = useState(false);
   useEffect(() => setCat(defaultCat), [defaultCat]);
-  useAutoGrow(ref, text + dictation.interim);
+  useAutoGrow(ref, text);
 
   const save = async () => {
     if (!text.trim() || busy) return;
-    dictation.stop();
     setBusy(true);
     try {
       await api('/api/notes', { method: 'POST', body: { body: text, category_id: cat || null } });
@@ -152,17 +149,14 @@ function Composer({ cats, defaultCat, onSaved }) {
     } finally { setBusy(false); }
   };
   return (
-    <section className={`card composer ${dictation.listening ? 'listening' : ''}`}>
+    <section className="card composer">
       <textarea ref={ref} className="composer-text" rows={2} placeholder="Write a note… (first line is the title)"
-        value={dictation.interim ? joinSpoken(text, dictation.interim) : text}
+        value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); save(); } }} />
       <div className="composer-bar">
         <CategorySelect cats={cats} value={cat} onChange={setCat} />
-        {dictation.listening && <span className="listening-dot">Listening…</span>}
-        {dictation.hint && !dictation.listening && <span className="hint">{dictation.hint}</span>}
         <div className="spacer" />
-        <MicButton dictation={dictation} />
         <button className="btn primary" disabled={!text.trim() || busy} onClick={save} title="⌘↩">Save</button>
       </div>
     </section>
@@ -184,16 +178,15 @@ function NoteCard({ note, cat, showCat, onOpen }) {
 }
 
 function NoteEditor({ note, cats, onClose }) {
-  const { text, setText, ref, dictation } = useSpokenText(note.body);
+  const { text, setText, ref } = useText(note.body);
   const [cat, setCat] = useState(note.category_id || '');
   const [pinned, setPinned] = useState(!!note.pinned);
   const [error, setError] = useState('');
-  useAutoGrow(ref, text + dictation.interim, 140);
+  useAutoGrow(ref, text, 140);
   // Open with the cursor at the end, ready to keep writing.
   useEffect(() => { const el = ref.current; if (el && !matchMedia('(hover: none)').matches) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, [ref]);
 
   const close = async () => {
-    dictation.stop();
     const patch = {};
     if (text.trim() !== note.body) patch.body = text;
     if ((cat || null) !== (note.category_id || null)) patch.category_id = cat || null;
@@ -223,14 +216,13 @@ function NoteEditor({ note, cats, onClose }) {
           <CategorySelect cats={cats} value={cat} onChange={setCat} />
           <div className="spacer" />
           <button className={`icon-btn ${pinned ? 'on' : ''}`} title={pinned ? 'Unpin' : 'Pin to top'} onClick={() => setPinned(!pinned)}><IconPin /></button>
-          <MicButton dictation={dictation} />
-          <button className="icon-btn" title="Delete" onClick={remove}><IconTrash /></button>
+            <button className="icon-btn" title="Delete" onClick={remove}><IconTrash /></button>
           <button className="icon-btn" title="Close" onClick={close}><IconX /></button>
         </div>
         <textarea ref={ref} className="composer-text big"
-          value={dictation.interim ? joinSpoken(text, dictation.interim) : text}
+          value={text}
           onChange={(e) => { setText(e.target.value); setError(''); }} />
-        {(error || dictation.hint) && <div className="hint">{error || dictation.hint}</div>}
+        {error && <div className="hint">{error}</div>}
         <div className="note-foot">Created {new Date(note.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>
       </div>
     </div>

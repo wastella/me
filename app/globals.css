@@ -520,17 +520,12 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 .cat.add { color: var(--faint); }
 .cat-new .input { padding: 5px 9px; font-size: 13px; }
 .composer { padding: 12px 14px 10px; }
-.composer.listening { border-color: var(--text); }
 .composer-text { width: 100%; border: 0; outline: 0; background: transparent; resize: none; font-size: 14.5px; line-height: 1.5; min-height: 44px; display: block; }
 .composer-text.big { font-size: 15px; min-height: 140px; max-height: 60vh; overflow: auto; }
 .composer-bar, .note-editor-head { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
 .composer-bar .spacer, .note-editor-head .spacer { flex: 1; }
 .cat-select { width: auto; padding: 5px 8px; font-size: 12.5px; }
-.icon-btn.mic svg { width: 18px; height: 18px; }
-.icon-btn.mic.on { color: var(--bg); background: var(--p1); animation: mic-pulse 1.4s ease-in-out infinite; }
 .icon-btn.on { color: var(--text); background: var(--panel-2); }
-@keyframes mic-pulse { 50% { box-shadow: 0 0 0 5px color-mix(in srgb, var(--p1) 25%, transparent); } }
-.listening-dot { font-size: 12px; color: var(--p1); }
 .hint { font-size: 12px; color: var(--muted); }
 .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; align-items: start; }
 .note-card { text-align: left; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; color: inherit; font: inherit; cursor: pointer; }
