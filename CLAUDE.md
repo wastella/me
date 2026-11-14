@@ -12,7 +12,10 @@ William's personal life dashboard: tasks, Google Calendar, notes and training. A
 ## Layout
 
 - `app/` pages: `/` Home (today's schedule and tasks), `/tasks`, `/calendar` (Day/Week/Month; keys D/W/M, T = today), `/notes`, `/training`, `/settings`, `/login`.
+- `components/ui.js`: shared building blocks. `Sheet` (modal on a computer, drawer for task details, bottom sheet on a phone; traps focus, Esc closes), `useDialog()` for `confirm`/`prompt` (never use the browser's own `confirm()`/`prompt()`), `Popover` menus, `Segmented`, `Skeleton`, `Empty`, `LoadError`. Changes go through `attempt()` from `useApp()`, which shows an error toast and reloads if saving fails.
+- `app/globals.css` is one organized stylesheet (tokens first, phone rules near the end). Reuse its classes; avoid inline styles.
 - `app/api/*` route handlers wrap logic in `lib/`, using `handle`/`json`/`body` from `lib/http.js`. Client code calls them through `api()`/`useApi()` in `lib/client.js`.
+- `lib/projects.js`: projects and sections (Misc can't be renamed or deleted).
 - `lib/tasks.js`: tasks, quick-add (`lib/quickadd.js`, chrono-node), recurrence (`lib/dates.js`). There is no "overdue": unfinished past tasks roll to the top of today (`rollover`). Order within a day is `day_order`, changed by drag (pointer events in `components/AppProvider.js`, long-press on touch). Projects replace labels; the inbox project is called "Misc".
 - `lib/google.js`: OAuth plus Calendar (list, create, delete events). Gmail helpers still exist but the Mail UI was removed on purpose.
 - `lib/notes.js`: notes and note categories (`category_id` NULL = Unsorted). Typing only: voice dictation was tried and removed at the owner's request, so don't add it back.
@@ -26,6 +29,8 @@ William's personal life dashboard: tasks, Google Calendar, notes and training. A
 ## Workflow
 
 - Local: `npm run build && npm start` (or `npm run dev`) on http://localhost:3737. A local run uses `data/me.db`, not the real Turso data, so test there freely. The preview config is in `.claude/launch.json` (name `me`).
+- Tests: `npm test` runs the logic tests in `tests/*.test.mjs` (dates, quick-add, tasks, projects, notes, training, sign-in) against a throwaway database. `npm run test:e2e` builds the app and clicks through every screen at desktop and phone size with Playwright (`tests/e2e`; first time: `npx playwright install chromium`). Stop any local server on port 3737 first. Add or update tests with every change, and run both before deploying.
+- `npm run seed` fills an empty local database with sample data.
 - Check UI changes in the browser at desktop width and at phone width (375px), with no horizontal overflow.
 - Deploy: `npx --yes vercel@65.12.1 deploy --prod --yes`.
 - Mac app: `npm run install-app` rebuilds `/Applications/Me.app`. This is only needed when something in `electron/` changes, since the app loads the hosted site.

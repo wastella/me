@@ -21,3 +21,9 @@ export const IconTask = P(<><rect x="4" y="4" width="16" height="16" rx="4" /><p
 export const IconLift = P(<><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11" /></>);
 export const IconNote = P(<><path d="M6 3.5h8.5L19 8v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19V5a1.5 1.5 0 0 1 1-1.5z" /><path d="M14 3.5V8h5M8.5 12.5h7M8.5 16h5" /></>);
 export const IconPin = P(<><path d="M9 4h6l-1 5 3.5 3.5h-11L10 9z" /><path d="M12 12.5V20" /></>);
+export const IconPlus = P(<path d="M12 5v14M5 12h14" />);
+export const IconMore = P(<><circle cx="5" cy="12" r="1.2" fill="currentColor" /><circle cx="12" cy="12" r="1.2" fill="currentColor" /><circle cx="19" cy="12" r="1.2" fill="currentColor" /></>);
+export const IconFlag = P(<><path d="M5 21V4" /><path d="M5 4.5h11l-2 4 2 4H5" /></>);
+export const IconClock = P(<><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>);
+export const IconSliders = P(<><path d="M4 7h10M18 7h2M4 17h2M10 17h10" /><circle cx="16" cy="7" r="2" /><circle cx="8" cy="17" r="2" /></>);
+export const IconMap = P(<><path d="M12 21s-6.5-5.6-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z" /><circle cx="12" cy="10.5" r="2.3" /></>);

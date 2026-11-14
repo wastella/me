@@ -37,3 +37,9 @@ Everything was imported from Todoist on 2026-11-04 (projects, recurring rules an
 ## Quick add
 
 Press **Q** anywhere. For example: `Call mom tomorrow 5pm p1 #Misc`, or `Stretch every day at 7am`, or `Pay rent every 1st`, or `Haircut every! 6 weeks` (the `!` repeats from the day you complete it).
+
+## Tests
+
+- `npm test` checks the logic (dates, repeats, quick add, tasks, projects, notes, training, sign-in) against a throwaway database.
+- `npm run test:e2e` builds the app and clicks through every screen at desktop and phone size. First time only: `npx playwright install chromium`. Stop any local server on port 3737 first.
+- `npm run seed` fills an empty local database with sample data to look at.

@@ -2,7 +2,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, useApi } from '@/lib/client';
 import { addDays, parse, humanDate, diffDays } from '@/lib/dates';
-import { IconX, IconTrash } from '@/components/Icons';
+import { IconTrash, IconPlus } from '@/components/Icons';
+import { useApp } from '@/components/AppProvider';
+import { Sheet, Segmented, Skeleton, LoadError, Empty, useDialog } from '@/components/ui';
 import Posture from '@/components/Posture';
 
 const DAY = { upper: 'Upper', lower: 'Lower' };
@@ -15,7 +17,8 @@ export default function Training() {
   const [editing, setEditing] = useState(null);   // workout being edited
   const [routine, setRoutine] = useState(false);
   const d = q.data;
-  if (!d) return <><div className="page-head"><h1>Training</h1></div><div className="empty"><span className="spin" /></div></>;
+  if (q.error && !d) return <><div className="page-head"><h1>Training</h1></div><LoadError error={q.error} onRetry={q.reload} /></>;
+  if (!d) return <><div className="page-head"><h1>Training</h1></div><Skeleton rows={8} /></>;
 
   const { plan } = d;
   const headline = plan.status === 'due' ? `${DAY[plan.day]} day`
@@ -28,7 +31,7 @@ export default function Training() {
     <>
       <div className="page-head">
         <div><h1>{headline}</h1><div className="sub">{sub}</div></div>
-        <button className="btn ghost" onClick={() => setRoutine(true)}>Edit routine</button>
+        <button className="btn" onClick={() => setRoutine(true)}>Edit routine</button>
       </div>
       <div className="train-grid">
         <div className="stack">
@@ -54,7 +57,7 @@ function TodayWorkout({ data, reload, onEdit }) {
   if (todays) {
     return (
       <section className="card">
-        <div className="card-head"><h2>{DAY[todays.day]} · logged</h2><button className="more linkish" onClick={() => onEdit(todays)}>Edit</button></div>
+        <div className="card-head"><h2>{DAY[todays.day]} day logged</h2><button className="more linkish" onClick={() => onEdit(todays)}>Edit</button></div>
         <div className="card-body"><SessionSummary data={data} w={todays} /></div>
       </section>
     );
@@ -64,8 +67,8 @@ function TodayWorkout({ data, reload, onEdit }) {
       <section className="card">
         <div className="card-head"><h2>No lift today</h2></div>
         <div className="card-body">
-          <p className="muted" style={{ margin: '2px 0 10px' }}>You lifted {DAY[plan.last.day].toLowerCase()} yesterday. {DAY[plan.nextDay]} is {humanDate(plan.nextDate, today).toLowerCase()}.</p>
-          <button className="btn ghost" onClick={() => setForce(true)}>Log a workout anyway</button>
+          <p className="muted" style={{ margin: '2px 0 12px' }}>You lifted {DAY[plan.last.day].toLowerCase()} yesterday. {DAY[plan.nextDay]} is {humanDate(plan.nextDate, today).toLowerCase()}.</p>
+          <button className="btn" onClick={() => setForce(true)}>Log a workout anyway</button>
         </div>
       </section>
     );
@@ -82,25 +85,24 @@ function WorkoutForm({ data, initialDay, date: initialDate, workout, onSaved, on
     return v;
   });
   const [busy, setBusy] = useState(false);
+  const { attempt, showToast } = useApp();
   const list = data.exercises.filter((e) => e.day === day);
   const get = (e) => vals[e.id] ?? (workout ? { weight: '', note: '' } : { weight: e.kind === 'weight' ? (data.last[e.id]?.weight ?? '') : '', note: e.kind === 'note' ? (data.last[e.id]?.note || '') : '' });
   const set = (e, patch) => setVals((v) => ({ ...v, [e.id]: { ...get(e), ...patch } }));
   const save = async () => {
     setBusy(true);
-    try {
-      await api('/api/training/workouts', { method: 'POST', body: { id: workout?.id, date, day, sets: list.map((e) => ({ exercise_id: e.id, ...get(e) })) } });
-      onSaved();
-    } finally { setBusy(false); }
+    const ok = await attempt(() => api('/api/training/workouts', { method: 'POST', body: { id: workout?.id, date, day, sets: list.map((e) => ({ exercise_id: e.id, ...get(e) })) } }));
+    setBusy(false);
+    if (ok) { showToast(workout ? 'Workout updated' : `${DAY[day]} day logged`); onSaved(); }
   };
+  const bump = (e, by) => set(e, { weight: Math.max(0, (Number(get(e).weight) || 0) + by) });
   return (
     <section className={workout ? '' : 'card'}>
-      <div className="card-head">
-        <h2>{workout ? 'Edit workout' : 'Log today’s lift'}</h2>
-        <div className="tabs small">
-          {['upper', 'lower'].map((k) => <button key={k} className={day === k ? 'on' : ''} onClick={() => setDay(k)}>{DAY[k]}</button>)}
-        </div>
+      <div className="card-head" style={workout ? { padding: 0 } : undefined}>
+        <h2>{workout ? short(workout.date) : 'Log today’s lift'}</h2>
+        <Segmented small label="Workout day" value={day} onChange={setDay} options={[['upper', 'Upper'], ['lower', 'Lower']]} />
       </div>
-      <div className="card-body">
+      <div className="card-body" style={workout ? { padding: 0 } : undefined}>
         <div className="lift-rows">
           {list.map((e) => {
             const last = data.last[e.id];
@@ -113,22 +115,23 @@ function WorkoutForm({ data, initialDay, date: initialDate, workout, onSaved, on
                 </div>
                 {e.kind === 'weight' ? (
                   <div className="lift-input">
-                    <button className="icon-btn" onClick={() => set(e, { weight: Math.max(0, (Number(v.weight) || 0) - 5) })} aria-label="Minus 5">−</button>
-                    <input className="input num" inputMode="decimal" value={v.weight} placeholder="lb" onChange={(x) => set(e, { weight: x.target.value })} />
-                    <button className="icon-btn" onClick={() => set(e, { weight: (Number(v.weight) || 0) + 5 })} aria-label="Plus 5">+</button>
+                    <button type="button" className="icon-btn" onClick={() => bump(e, -5)} aria-label={`${e.name}: 5 lb less`}>−</button>
+                    <input className="input num" inputMode="decimal" value={v.weight} placeholder="lb" aria-label={`${e.name} weight in pounds`}
+                      onChange={(x) => set(e, { weight: x.target.value.replace(/[^0-9.]/g, '') })} onFocus={(x) => x.target.select()} />
+                    <button type="button" className="icon-btn" onClick={() => bump(e, 5)} aria-label={`${e.name}: 5 lb more`}>+</button>
                   </div>
                 ) : (
-                  <input className="input" style={{ maxWidth: 220 }} value={v.note} placeholder={last?.note || 'What you did'} onChange={(x) => set(e, { note: x.target.value })} />
+                  <input className="input lift-note" value={v.note} aria-label={`${e.name} notes`} placeholder={last?.note || 'What you did'} onChange={(x) => set(e, { note: x.target.value })} />
                 )}
               </div>
             );
           })}
-          {!list.length && <div className="empty">No {DAY[day].toLowerCase()} exercises yet. Add some in Edit routine.</div>}
+          {!list.length && <Empty title={`No ${DAY[day].toLowerCase()} exercises yet`}>Add some in Edit routine.</Empty>}
         </div>
-        <div className="row" style={{ marginTop: 14, justifyContent: 'space-between' }}>
-          <input className="input" type="date" style={{ width: 160 }} value={date} onChange={(x) => setDate(x.target.value)} />
+        <div className="lift-foot">
+          <input className="input auto" type="date" aria-label="Workout date" max={data.today} value={date} onChange={(x) => setDate(x.target.value || data.today)} />
           <div className="row">
-            {onCancel && <button className="btn ghost" onClick={onCancel}>Cancel</button>}
+            {onCancel && <button className="btn" onClick={onCancel}>Cancel</button>}
             <button className="btn primary" disabled={busy || !list.length} onClick={save}>{busy ? 'Saving…' : workout ? 'Save' : 'Finish workout'}</button>
           </div>
         </div>
@@ -170,7 +173,7 @@ function Progress({ data }) {
           {['upper', 'lower'].map((day) => (
             <div key={day}>
               <span className="lbl">{DAY[day]}</span>
-              {weighted.filter((e) => e.day === day).map((e) => <button key={e.id} className={e.id === ex.id ? 'on' : ''} onClick={() => setSel(e.id)}>{e.name}</button>)}
+              {weighted.filter((e) => e.day === day).map((e) => <button key={e.id} aria-pressed={e.id === ex.id} onClick={() => setSel(e.id)}>{e.name}</button>)}
             </div>
           ))}
         </div>
@@ -196,7 +199,7 @@ function LineChart({ title, points }) {
     return () => ro.disconnect();
   }, []);
   const H = 200, P = { l: 40, r: 14, t: 12, b: 26 };
-  if (points.length === 0) return <div ref={wrap} className="empty">No weights logged yet.</div>;
+  if (points.length === 0) return <div ref={wrap}><Empty>No weights logged for this one yet.</Empty></div>;
   const t = points.map((p) => parse(p.date).getTime());
   const t0 = Math.min(...t), t1 = Math.max(...t) || t0 + 1;
   const ws = points.map((p) => p.weight);
@@ -217,7 +220,7 @@ function LineChart({ title, points }) {
   const xLabels = [0, Math.floor((points.length - 1) / 2), points.length - 1].filter((v, i, a) => a.indexOf(v) === i);
   return (
     <div ref={wrap} className="chart" aria-label={`${title} weight over time`}>
-      <svg width={w} height={H} onMouseMove={onMove} onMouseLeave={() => setHover(null)} role="img">
+      <svg width={w} height={H} onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={() => setHover(null)} role="img" aria-label={`${title} weight over time`} style={{ touchAction: 'pan-y' }}>
         {ticks.map((v) => (
           <g key={v}>
             <line x1={P.l} x2={w - P.r} y1={y(v)} y2={y(v)} className="grid" />
@@ -227,7 +230,7 @@ function LineChart({ title, points }) {
         {xLabels.map((i) => <text key={i} x={x(t[i])} y={H - 8} textAnchor={i === 0 ? 'start' : i === points.length - 1 ? 'end' : 'middle'} className="axis">{short(points[i].date)}</text>)}
         {hp && <line x1={x(t[hover])} x2={x(t[hover])} y1={P.t} y2={H - P.b} className="crosshair" />}
         <path d={path} className="series" />
-        {points.map((p, i) => <circle key={i} cx={x(t[i])} cy={y(p.weight)} r={hover === i ? 5 : 4} className="dot" />)}
+        {points.map((p, i) => <circle key={i} cx={x(t[i])} cy={y(p.weight)} r={hover === i ? 5 : 4} className="dot-pt" />)}
       </svg>
       {hp && (
         <div className="tip" style={{ left: Math.min(Math.max(x(t[hover]), 70), w - 70), top: y(hp.weight) - 10 }}>
@@ -251,89 +254,98 @@ function History({ data, onEdit }) {
           {data.history.slice(0, n).map((w) => {
             const main = w.sets.filter((s) => byId[s.exercise_id]?.kind === 'weight').sort((a, b) => byId[a.exercise_id].sort - byId[b.exercise_id].sort).slice(0, 3);
             return (
-              <li key={w.id} onClick={() => onEdit(w)}>
-                <span className="when">{short(w.date)}</span>
-                <span className={`daytag ${w.day}`}>{DAY[w.day]}</span>
-                <span className="tops">{main.map((s) => `${byId[s.exercise_id].name} ${fmtW(s.weight)}`).join(' · ')}</span>
+              <li key={w.id}>
+                <button onClick={() => onEdit(w)} aria-label={`Edit ${DAY[w.day].toLowerCase()} workout from ${short(w.date)}`}>
+                  <span className="when">{short(w.date)}</span>
+                  <span className="daytag">{DAY[w.day]}</span>
+                  <span className="tops">{main.map((s) => `${byId[s.exercise_id].name} ${fmtW(s.weight)}`).join(' · ')}</span>
+                </button>
               </li>
             );
           })}
         </ul>
-        {data.history.length > n && <button className="btn ghost earlier" onClick={() => setN(n + 10)}>Show more</button>}
+        {!data.history.length && <Empty title="No workouts yet">Your logged lifts will show up here.</Empty>}
+        {data.history.length > n && <button className="btn ghost sm earlier" onClick={() => setN(n + 10)}>Show more</button>}
       </div>
     </section>
   );
 }
 
 function WorkoutModal({ data, workout, onClose, onSaved }) {
+  const { attempt, showToast } = useApp();
+  const { confirm } = useDialog();
   const del = async () => {
-    if (!confirm(`Delete the ${DAY[workout.day].toLowerCase()} workout from ${short(workout.date)}?`)) return;
-    await api(`/api/training/workouts?id=${workout.id}`, { method: 'DELETE' });
-    onSaved();
+    if (!(await confirm({ title: 'Delete this workout?', body: `The ${DAY[workout.day].toLowerCase()} workout from ${short(workout.date)} will be removed.`, confirmLabel: 'Delete', danger: true }))) return;
+    if (await attempt(() => api(`/api/training/workouts?id=${encodeURIComponent(workout.id)}`, { method: 'DELETE' }))) { showToast('Workout deleted'); onSaved(); }
   };
   return (
-    <div className="modal-wrap" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal wide">
-        <WorkoutForm data={data} workout={workout} onSaved={onSaved} onCancel={onClose} />
-        <button className="btn ghost danger" style={{ alignSelf: 'flex-start' }} onClick={del}><IconTrash style={{ width: 14 }} /> Delete workout</button>
-      </div>
-    </div>
+    <Sheet wide title="Edit workout" onClose={onClose} tools={<button className="icon-btn" title="Delete workout" aria-label="Delete workout" onClick={del}><IconTrash /></button>}>
+      <WorkoutForm data={data} workout={workout} onSaved={onSaved} onCancel={onClose} />
+    </Sheet>
   );
 }
 
 /* ---------- Routine editor ---------- */
 function RoutineModal({ data, onClose }) {
+  const { attempt } = useApp();
+  const { confirm, prompt } = useDialog();
   const [ex, setEx] = useState(data.exercises);
   const [steps, setSteps] = useState(data.posture);
   const saveEx = async (e, patch) => {
     setEx((list) => list.map((x) => (x.id === e.id ? { ...x, ...patch } : x)));
-    await api('/api/training/exercises', { method: 'PUT', body: { id: e.id, ...patch } });
+    await attempt(() => api('/api/training/exercises', { method: 'PUT', body: { id: e.id, ...patch } }));
   };
   const addEx = async (day) => {
-    const name = prompt(`New ${DAY[day].toLowerCase()} exercise`);
-    if (!name?.trim()) return;
-    const { id } = await api('/api/training/exercises', { method: 'PUT', body: { day, name: name.trim(), sets: 3, reps: '8', kind: 'weight' } });
-    setEx((l) => [...l, { id, day, name: name.trim(), sets: 3, reps: '8', kind: 'weight', sort: 999 }]);
+    const name = await prompt({ title: `New ${DAY[day].toLowerCase()} exercise`, label: 'Exercise name', confirmLabel: 'Add' });
+    if (!name) return;
+    const r = await attempt(() => api('/api/training/exercises', { method: 'PUT', body: { day, name, sets: 3, reps: '8', kind: 'weight' } }));
+    if (r) setEx((l) => [...l, { id: r.id, day, name, sets: 3, reps: '8', kind: 'weight', sort: 999 }]);
+  };
+  const removeEx = async (e) => {
+    if (await confirm({ title: `Remove ${e.name}?`, body: 'It leaves your routine. Past workouts keep their numbers.', confirmLabel: 'Remove', danger: true })) saveEx(e, { archived: 1 });
   };
   const saveStep = async (s, patch) => {
     setSteps((l) => l.map((x) => (x.id === s.id ? { ...x, ...patch } : x)).filter((x) => !x.archived));
-    await api('/api/training/posture', { method: 'PUT', body: { id: s.id, ...patch } });
+    await attempt(() => api('/api/training/posture', { method: 'PUT', body: { id: s.id, ...patch } }));
   };
   const addStep = async () => {
-    const name = prompt('New posture step');
-    if (!name?.trim()) return;
-    const { id } = await api('/api/training/posture', { method: 'PUT', body: { name: name.trim() } });
-    setSteps((l) => [...l, { id, name: name.trim() }]);
+    const name = await prompt({ title: 'New posture step', label: 'Step name', confirmLabel: 'Add' });
+    if (!name) return;
+    const r = await attempt(() => api('/api/training/posture', { method: 'PUT', body: { name } }));
+    if (r) setSteps((l) => [...l, { id: r.id, name }]);
   };
+  const removeStep = async (s) => {
+    if (await confirm({ title: `Remove ${s.name}?`, confirmLabel: 'Remove', danger: true })) saveStep(s, { archived: 1 });
+  };
+  const blurOnEnter = (e) => { if (e.key === 'Enter') e.currentTarget.blur(); };
   return (
-    <div className="modal-wrap" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal wide routine">
-        <div className="row" style={{ justifyContent: 'space-between' }}><h2 style={{ fontSize: 17 }}>Routine</h2><button className="icon-btn" onClick={onClose}><IconX /></button></div>
-        {['upper', 'lower'].map((day) => (
-          <div key={day}>
-            <div className="group-title">{DAY[day]}</div>
-            {ex.filter((e) => e.day === day && !e.archived).map((e) => (
-              <div key={e.id} className="routine-row">
-                <input className="input" defaultValue={e.name} onBlur={(x) => x.target.value.trim() && x.target.value !== e.name && saveEx(e, { name: x.target.value.trim() })} />
-                <input className="input num" title="Sets" defaultValue={e.sets ?? ''} placeholder="sets" onBlur={(x) => saveEx(e, { sets: x.target.value ? Number(x.target.value) : null })} />
-                <span className="muted">×</span>
-                <input className="input num" title="Reps" defaultValue={e.reps ?? ''} placeholder="reps" onBlur={(x) => saveEx(e, { reps: x.target.value || null })} />
-                <select className="input" value={e.kind} onChange={(x) => saveEx(e, { kind: x.target.value })}><option value="weight">Weight</option><option value="note">Note</option></select>
-                <button className="icon-btn" title="Remove" onClick={() => confirm(`Remove ${e.name}? Its history is kept.`) && saveEx(e, { archived: 1 })}><IconTrash /></button>
-              </div>
-            ))}
-            <button className="btn ghost earlier" onClick={() => addEx(day)}>+ Add exercise</button>
-          </div>
-        ))}
-        <div className="group-title">Posture (daily)</div>
+    <Sheet wide title="Routine" onClose={onClose}>
+      {['upper', 'lower'].map((day) => (
+        <div key={day}>
+          <div className="group-title" style={{ paddingTop: 4, marginBottom: 6 }}>{DAY[day]} day</div>
+          {ex.filter((e) => e.day === day && !e.archived).map((e) => (
+            <div key={e.id} className="routine-row">
+              <input className="input name" aria-label="Exercise name" defaultValue={e.name} onKeyDown={blurOnEnter} onBlur={(x) => { const v = x.target.value.trim(); if (!v) x.target.value = e.name; else if (v !== e.name) saveEx(e, { name: v }); }} />
+              <input className="input num" inputMode="numeric" aria-label="Sets" title="Sets" defaultValue={e.sets ?? ''} placeholder="sets" onKeyDown={blurOnEnter} onBlur={(x) => { const v = x.target.value ? Number(x.target.value) : null; if (v !== (e.sets ?? null) && !Number.isNaN(v)) saveEx(e, { sets: v }); }} />
+              <span className="x" aria-hidden="true">×</span>
+              <input className="input num" aria-label="Reps" title="Reps" defaultValue={e.reps ?? ''} placeholder="reps" onKeyDown={blurOnEnter} onBlur={(x) => { const v = x.target.value.trim() || null; if (v !== (e.reps ?? null)) saveEx(e, { reps: v }); }} />
+              <select className="input auto" aria-label="What you log" value={e.kind} onChange={(x) => saveEx(e, { kind: x.target.value })}><option value="weight">Weight</option><option value="note">Note</option></select>
+              <button className="icon-btn" title={`Remove ${e.name}`} aria-label={`Remove ${e.name}`} onClick={() => removeEx(e)}><IconTrash /></button>
+            </div>
+          ))}
+          <button className="btn ghost sm earlier" style={{ marginTop: 4 }} onClick={() => addEx(day)}><IconPlus /> Add exercise</button>
+        </div>
+      ))}
+      <div>
+        <div className="group-title" style={{ paddingTop: 4, marginBottom: 6 }}>Posture, every day</div>
         {steps.map((s) => (
-          <div key={s.id} className="routine-row">
-            <input className="input" defaultValue={s.name} onBlur={(x) => x.target.value.trim() && x.target.value !== s.name && saveStep(s, { name: x.target.value.trim() })} />
-            <button className="icon-btn" title="Remove" onClick={() => confirm(`Remove ${s.name}?`) && saveStep(s, { archived: 1 })}><IconTrash /></button>
+          <div key={s.id} className="routine-row" style={{ flexWrap: 'nowrap' }}>
+            <input className="input" aria-label="Step name" defaultValue={s.name} onKeyDown={blurOnEnter} onBlur={(x) => { const v = x.target.value.trim(); if (!v) x.target.value = s.name; else if (v !== s.name) saveStep(s, { name: v }); }} />
+            <button className="icon-btn" title={`Remove ${s.name}`} aria-label={`Remove ${s.name}`} onClick={() => removeStep(s)}><IconTrash /></button>
           </div>
         ))}
-        <button className="btn ghost earlier" onClick={addStep}>+ Add step</button>
+        <button className="btn ghost sm earlier" style={{ marginTop: 4 }} onClick={addStep}><IconPlus /> Add step</button>
       </div>
-    </div>
+    </Sheet>
   );
 }

@@ -3,14 +3,23 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { api, useApi } from '@/lib/client';
 import { humanDate } from '@/lib/dates';
 import TaskEditor from './TaskEditor';
+import { useDialog } from './ui';
 
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
 
+// A thin strip at the top of the page while the device has no connection.
+export function OfflineBanner() {
+  const app = useApp();
+  return app?.offline ? <div className="banner" role="status">You’re offline. Changes won’t save until you’re back online.</div> : null;
+}
+
 export default function AppProvider({ children }) {
   const tasksQ = useApi('/api/tasks');
   const status = useApi('/api/status');
+  const { confirm } = useDialog();
   const [toast, setToast] = useState(null);
+  const [offline, setOffline] = useState(false);
   const [editing, setEditing] = useState(null);
   const [drag, setDrag] = useState(null);          // { id, title, x, y, target: { list, index } }
   const lists = useRef(new Map());                 // list key -> { order, reorder }
@@ -24,38 +33,55 @@ export default function AppProvider({ children }) {
     else if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
   }, []);
 
-  const showToast = useCallback((msg, action) => {
-    clearTimeout(toastTimer.current);
-    setToast({ msg, action });
-    toastTimer.current = setTimeout(() => setToast(null), 5000);
+  useEffect(() => {
+    const sync = () => setOffline(!navigator.onLine);
+    sync();
+    window.addEventListener('online', sync); window.addEventListener('offline', sync);
+    return () => { window.removeEventListener('online', sync); window.removeEventListener('offline', sync); };
   }, []);
+
+  // showToast('Saved') · showToast('Done', { action: { label: 'Undo', run } }) · showToast(msg, { error: true })
+  const showToast = useCallback((msg, { action, error } = {}) => {
+    clearTimeout(toastTimer.current);
+    setToast({ msg, action, error, key: Date.now() });
+    toastTimer.current = setTimeout(() => setToast(null), error ? 7000 : 5000);
+  }, []);
+
+  // Runs a change; if it fails, says so and reloads so the screen matches what was really saved.
+  const attempt = useCallback(async (fn) => {
+    try { return await fn(); }
+    catch (e) { showToast(e.message || 'That didn’t save. Try again.', { error: true }); tasksQ.reload(); return undefined; }
+  }, [showToast, tasksQ.reload]); // eslint-disable-line
 
   const data = tasksQ.data || { projects: [], sections: [], labels: [], tasks: [] };
   const projectById = useMemo(() => Object.fromEntries(data.projects.map((p) => [p.id, p])), [data.projects]);
 
-  const addTask = useCallback(async (input) => {
+  const addTask = useCallback((input) => attempt(async () => {
     const t = await api('/api/tasks', { method: 'POST', body: input });
     tasksQ.reload();
     showToast(`Added “${t.content}”${t.due_date ? ` · ${humanDate(t.due_date)}` : ''}`);
     return t;
-  }, [tasksQ, showToast]);
+  }), [attempt, tasksQ, showToast]);
 
-  const updateTask = useCallback(async (id, patch) => {
+  const updateTask = useCallback((id, patch) => attempt(async () => {
     tasksQ.setData((d) => d && { ...d, tasks: d.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) });
     await api(`/api/tasks/${id}`, { method: 'PATCH', body: patch });
     tasksQ.reload();
-  }, [tasksQ]);
+    return true;
+  }), [attempt, tasksQ]);
 
-  const completeTask = useCallback(async (task) => {
+  const completeTask = useCallback((task) => attempt(async () => {
     if (!task.recurring) tasksQ.setData((d) => d && { ...d, tasks: d.tasks.filter((t) => t.id !== task.id && t.parent_id !== task.id) });
     const r = await api(`/api/tasks/${task.id}`, { method: 'POST', body: { action: 'complete' } });
     tasksQ.reload();
-    const undo = async () => {
+    const undo = () => attempt(async () => {
+      setToast(null);
       await api(`/api/tasks/${task.id}`, { method: 'POST', body: { action: 'uncomplete', previousDue: task.due_date } });
-      tasksQ.reload(); setToast(null);
-    };
-    showToast(r.rescheduled ? `Done · next: ${humanDate(r.rescheduled)}` : `Completed “${task.content}”`, { label: 'Undo', run: undo });
-  }, [tasksQ, showToast]);
+      tasksQ.reload();
+    });
+    showToast(r.rescheduled ? `Done · next ${humanDate(r.rescheduled).toLowerCase()}` : `Completed “${task.content}”`, { action: { label: 'Undo', run: undo } });
+    return r;
+  }), [attempt, tasksQ, showToast]);
 
   // Drag-and-drop: apply locally first so the list doesn't jump, then save.
   const reorderTasks = useCallback(async ({ ids, field, moved, patch }) => {
@@ -65,9 +91,9 @@ export default function AppProvider({ children }) {
       if (patch && t.id === moved) n = { ...n, ...patch, ...('due_date' in patch && !patch.due_date ? { due_time: null, recurring: false } : {}) };
       return n;
     }) });
-    try { await api('/api/tasks/reorder', { method: 'POST', body: { ids, field, moved, patch } }); }
-    finally { tasksQ.reload(); }
-  }, [tasksQ]);
+    await attempt(() => api('/api/tasks/reorder', { method: 'POST', body: { ids, field, moved, patch } }));
+    tasksQ.reload();
+  }, [tasksQ, attempt]);
 
   const registerList = useCallback((key, info) => {
     lists.current.set(key, info);
@@ -150,17 +176,21 @@ export default function AppProvider({ children }) {
   }, [reorderTasks]);
 
   const deleteTask = useCallback(async (task) => {
-    if (!confirm(`Delete “${task.content}”? This can't be undone.`)) return;
-    tasksQ.setData((d) => d && { ...d, tasks: d.tasks.filter((t) => t.id !== task.id) });
-    await api(`/api/tasks/${task.id}`, { method: 'DELETE' });
+    const kids = data.tasks.filter((t) => t.parent_id === task.id).length;
+    const ok = await confirm({ title: 'Delete this task?', body: `“${task.content}”${kids ? ` and its ${kids} subtask${kids === 1 ? '' : 's'}` : ''} will be removed for good.`, confirmLabel: 'Delete', danger: true });
+    if (!ok) return;
     setEditing(null);
-    tasksQ.reload();
-  }, [tasksQ]);
+    await attempt(async () => {
+      tasksQ.setData((d) => d && { ...d, tasks: d.tasks.filter((t) => t.id !== task.id && t.parent_id !== task.id) });
+      await api(`/api/tasks/${task.id}`, { method: 'DELETE' });
+      tasksQ.reload();
+    });
+  }, [tasksQ, attempt, confirm, data.tasks]);
 
   const value = {
-    ...data, projectById, tasksLoading: tasksQ.loading, reloadTasks: tasksQ.reload,
+    ...data, projectById, tasksLoading: tasksQ.loading && !tasksQ.data, tasksError: tasksQ.data ? null : tasksQ.error, reloadTasks: tasksQ.reload,
     status: status.data, reloadStatus: status.reload,
-    addTask, updateTask, completeTask, deleteTask, showToast, reorderTasks,
+    addTask, updateTask, completeTask, deleteTask, showToast, reorderTasks, attempt, offline,
     drag, startDrag, registerList, justDragged: () => Date.now() - draggedAt.current < 250,
     openTask: (t) => setEditing(t.id),
   };
@@ -172,7 +202,7 @@ export default function AppProvider({ children }) {
       {editingTask && <TaskEditor task={editingTask} onClose={() => setEditing(null)} />}
       {drag && <div className="drag-ghost" style={{ left: drag.x + 12, top: drag.y + 8 }}>{drag.title}</div>}
       {toast && (
-        <div className="toast" role="status">
+        <div key={toast.key} className={`toast ${toast.error ? 'error' : ''}`} role={toast.error ? 'alert' : 'status'}>
           <span>{toast.msg}</span>
           {toast.action && <button onClick={toast.action.run}>{toast.action.label}</button>}
         </div>

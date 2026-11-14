@@ -1,5 +1,6 @@
 import './globals.css';
-import AppProvider from '@/components/AppProvider';
+import AppProvider, { OfflineBanner } from '@/components/AppProvider';
+import { DialogProvider } from '@/components/ui';
 import Sidebar from '@/components/Sidebar';
 
 export const metadata = {
@@ -12,19 +13,21 @@ export const metadata = {
 };
 export const viewport = {
   width: 'device-width', initialScale: 1, viewportFit: 'cover',
-  themeColor: [{ media: '(prefers-color-scheme: dark)', color: '#0c0c0c' }, { media: '(prefers-color-scheme: light)', color: '#fafafa' }],
+  themeColor: [{ media: '(prefers-color-scheme: dark)', color: '#0c0c0d' }, { media: '(prefers-color-scheme: light)', color: '#f6f6f7' }],
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <AppProvider>
-          <div className="shell">
-            <Sidebar />
-            <main className="main">{children}</main>
-          </div>
-        </AppProvider>
+        <DialogProvider>
+          <AppProvider>
+            <div className="shell">
+              <Sidebar />
+              <main className="main"><OfflineBanner />{children}</main>
+            </div>
+          </AppProvider>
+        </DialogProvider>
       </body>
     </html>
   );

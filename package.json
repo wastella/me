@@ -9,12 +9,17 @@
     "app": "electron .",
     "dist": "electron-builder --mac dir",
     "install-app": "npm run dist && APP=dist/$([ \"$(uname -m)\" = arm64 ] && echo mac-arm64 || echo mac)/Me.app && test -d \"$APP\" && rm -rf /Applications/Me.app && cp -R \"$APP\" /Applications/ && echo Installed /Applications/Me.app",
-    "app:local": "ME_URL=http://localhost:3737 electron ."
+    "app:local": "ME_URL=http://localhost:3737 electron .",
+    "test": "node --test \"tests/*.test.mjs\"",
+    "seed": "node scripts/seed-dev.mjs",
+    "test:e2e": "next build && playwright test",
+    "test:all": "npm test && npm run test:e2e"
   },
   "type": "module",
   "devDependencies": {
     "@libsql/client": "0.18.0",
     "@modelcontextprotocol/server": "2.3.1",
+    "@playwright/test": "1.65.1",
     "chrono-node": "2.10.3",
     "electron": "37.10.3",
     "electron-builder": "26.18.0",
@@ -27,7 +32,7 @@
   },
   "main": "electron/main.cjs",
   "productName": "Me",
-  "description": "Personal dashboard: tasks, calendar and email",
+  "description": "Personal dashboard: tasks, calendar, notes and training",
   "author": "wastella",
   "build": {
     "appId": "com.wastella.me",

@@ -7,3 +7,7 @@ build/
 .next/
 node_modules/
 .claude/
+.shots
+tests
+test-results
+playwright.config.mjs

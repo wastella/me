@@ -3,8 +3,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from './AppProvider';
 import { quickAdd } from '@/lib/quickadd';
 import { humanDate, humanTime } from '@/lib/dates';
+import { IconPlus } from './Icons';
 
-export default function QuickAdd({ defaults = {}, placeholder = 'Add a task — e.g. “Read ch. 3 tomorrow 5pm p1 #CS”', autoFocus, hotkey = true }) {
+// One-line task entry. Understands dates, repeats, p1–p4 and #Project as you
+// type, and shows what it understood underneath before you press Enter.
+export default function QuickAdd({ defaults = {}, placeholder = 'Add a task', hotkey = true, label }) {
   const { addTask, projects, projectById } = useApp();
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -13,9 +16,10 @@ export default function QuickAdd({ defaults = {}, placeholder = 'Add a task — 
   useEffect(() => {
     if (!hotkey) return;
     const onKey = (e) => {
-      if (e.key === 'q' && !e.metaKey && !e.ctrlKey && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
-        e.preventDefault(); ref.current?.focus();
-      }
+      if (e.key !== 'q' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const a = document.activeElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(a?.tagName) || a?.isContentEditable || document.body.classList.contains('sheet-open')) return;
+      e.preventDefault(); ref.current?.focus();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -27,29 +31,29 @@ export default function QuickAdd({ defaults = {}, placeholder = 'Add a task — 
     e.preventDefault();
     if (!text.trim() || busy) return;
     setBusy(true);
-    try {
-      await addTask({ text, ...defaults });
-      setText('');
-    } finally { setBusy(false); }
+    const added = await addTask({ text, ...defaults });
+    setBusy(false);
+    if (added) { setText(''); ref.current?.focus(); }   // on failure the text stays so nothing is lost
   };
+
+  const chips = preview && [
+    preview.due_date && <span key="d" className="chip date">{humanDate(preview.due_date)}{preview.due_time ? ` ${humanTime(preview.due_time)}` : ''}{preview.recurring ? ' · repeats' : ''}</span>,
+    preview.priority < 4 && <span key="p" className="chip" style={{ color: `var(--p${preview.priority})` }}>P{preview.priority}</span>,
+    preview.project_id && <span key="j" className="chip">{projectById[preview.project_id]?.name}</span>,
+    preview.newProject && <span key="n" className="chip">New project: {preview.newProject}</span>,
+  ].filter(Boolean);
 
   return (
     <form onSubmit={submit}>
       <div className="quickadd">
-        <span className="plus">+</span>
-        <input ref={ref} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} autoFocus={autoFocus}
-          onKeyDown={(e) => e.key === 'Escape' && (setText(''), e.currentTarget.blur())} />
-        {hotkey && !text && <span className="kbd" style={{ marginRight: 8 }}>Q</span>}
-        {text && <button className="btn primary" disabled={busy}>Add</button>}
+        <span className="plus" aria-hidden="true"><IconPlus /></span>
+        <input ref={ref} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} aria-label={label || placeholder}
+          enterKeyHint="done" autoComplete="off" autoCapitalize="sentences"
+          onKeyDown={(e) => { if (e.key === 'Escape') { setText(''); e.currentTarget.blur(); } }} />
+        {hotkey && !text && <span className="kbd" aria-hidden="true">Q</span>}
+        {text.trim() && <button className="btn primary sm" disabled={busy}>{busy ? 'Adding…' : 'Add'}</button>}
       </div>
-      {preview && (
-        <div className="qa-preview">
-          {preview.due_date && <span className="chip date">{humanDate(preview.due_date)}{preview.due_time ? ` ${humanTime(preview.due_time)}` : ''}{preview.recurring ? ' · repeats' : ''}</span>}
-          {preview.priority < 4 && <span className="chip" style={{ color: `var(--p${preview.priority})` }}>P{preview.priority}</span>}
-          {preview.project_id && <span className="chip"># {projectById[preview.project_id]?.name}</span>}
-          {preview.newProject && <span className="chip"># {preview.newProject} (new)</span>}
-        </div>
-      )}
+      {chips?.length > 0 && <div className="qa-preview" aria-live="polite">{chips}</div>}
     </form>
   );
 }

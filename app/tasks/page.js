@@ -1,12 +1,14 @@
 'use client';
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useApp } from '@/components/AppProvider';
 import QuickAdd from '@/components/QuickAdd';
 import { TaskList, sortTasks } from '@/components/TaskItem';
+import { Skeleton, LoadError, Empty, Popover, useDialog, useMounted } from '@/components/ui';
+import { IconPlus, IconMore, IconCheck } from '@/components/Icons';
 import { api, useApi } from '@/lib/client';
 import { todayStr, addDays, humanDate, parse } from '@/lib/dates';
-import { colorHex } from '@/lib/colors';
+import { colorHex, PALETTE } from '@/lib/colors';
 
 export default function Page() {
   return <Suspense fallback={null}><Tasks /></Suspense>;
@@ -14,36 +16,44 @@ export default function Page() {
 
 function Tasks() {
   const app = useApp();
-  const { tasks, projects, sections, projectById } = app;
+  const { tasks, projects, sections, projectById, tasksLoading, tasksError, reloadTasks, attempt } = app;
+  const { prompt } = useDialog();
   const params = useSearchParams();
   const router = useRouter();
+  const mounted = useMounted();
   const view = params.get('view') || 'today';
   const go = (v) => router.push(`/tasks?view=${encodeURIComponent(v)}`);
   const today = todayStr();
 
   const counts = useMemo(() => {
-    const c = { today: 0, upcoming: 0 };
+    const c = { today: 0 };
     for (const t of tasks) {
+      if (t.parent_id) continue;
       if (t.due_date && t.due_date <= today) c.today++;
       c['p:' + t.project_id] = (c['p:' + t.project_id] || 0) + 1;
     }
     return c;
   }, [tasks, today]);
 
-  let title = 'Today', body = null, defaults = {};
+  const newProject = async () => {
+    const name = await prompt({ title: 'New project', label: 'Project name', confirmLabel: 'Create' });
+    if (!name) return;
+    const p = await attempt(() => api('/api/projects', { method: 'POST', body: { name } }));
+    if (p) { await reloadTasks(); go('p:' + p.id); }
+  };
+
+  const project = view.startsWith('p:') ? projectById[view.slice(2)] : null;
+  let title = 'Today', sub = null, body = null, defaults = {}, tools = null;
   if (view === 'today') {
     defaults = { due_date: today };
-    const td = tasks.filter((t) => t.due_date && t.due_date <= today).sort(sortTasks);
-    body = (
-      <>
-        <div className="group-title">{parse(today).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })} <span className="count">{td.length}</span></div>
-        <TaskList tasks={td} allTasks={tasks} empty="Nothing due today." reorder={{ field: 'day_order', patch: { due_date: today } }} />
-      </>
-    );
+    const list = tasks.filter((t) => t.due_date && t.due_date <= today).sort(sortTasks);
+    sub = mounted ? parse(today).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : ' ';
+    body = <TaskList tasks={list} allTasks={tasks} showDate={false} empty="Nothing left for today." reorder={{ field: 'day_order', patch: { due_date: today } }} />;
   } else if (view === 'upcoming') {
     title = 'Upcoming';
     const days = Array.from({ length: 14 }, (_, i) => addDays(today, i + 1));
     const later = tasks.filter((t) => t.due_date && t.due_date > days[days.length - 1]).sort(sortTasks);
+    const undated = tasks.filter((t) => !t.due_date && !t.parent_id).sort(sortTasks);
     body = (
       <>
         {days.map((d) => {
@@ -51,125 +61,157 @@ function Tasks() {
           return (
             <div key={d}>
               <div className="group-title">{humanDate(d)} <span className="count">{parse(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{list.length ? ` · ${list.length}` : ''}</span></div>
-              <TaskList tasks={list} allTasks={tasks} reorder={{ field: 'day_order', patch: { due_date: d } }} />
+              <TaskList tasks={list} allTasks={tasks} showDate={false} reorder={{ field: 'day_order', patch: { due_date: d } }} />
             </div>
           );
         })}
         {later.length > 0 && <><div className="group-title">Later <span className="count">{later.length}</span></div><TaskList tasks={later} allTasks={tasks} /></>}
-        <div className="group-title">No date</div>
-        <TaskList tasks={tasks.filter((t) => !t.due_date && !t.parent_id).sort(sortTasks)} allTasks={tasks} empty="Everything has a date." reorder={{ field: 'day_order', patch: { due_date: null } }} />
-      </>
-    );
-  } else if (view.startsWith('p:')) {
-    const p = projectById[view.slice(2)];
-    title = p?.name || 'Project';
-    defaults = { project_id: p?.id };
-    const inProj = tasks.filter((t) => t.project_id === p?.id);
-    const secs = sections.filter((s) => s.project_id === p?.id);
-    const loose = inProj.filter((t) => !t.section_id).sort((a, b) => a.sort - b.sort);
-    body = (
-      <>
-        <TaskList tasks={loose} allTasks={tasks} showProject={false} empty={secs.length ? null : 'No tasks here yet.'} reorder={{ field: 'sort', patch: { section_id: null, project_id: p?.id } }} />
-        {secs.map((s) => {
-          const list = inProj.filter((t) => t.section_id === s.id).sort((a, b) => a.sort - b.sort);
-          return (
-            <div key={s.id}>
-              <div className="group-title">{s.name} <span className="count">{list.length}</span></div>
-              <TaskList tasks={list} allTasks={tasks} showProject={false} reorder={{ field: 'sort', patch: { section_id: s.id, project_id: p.id } }} />
-              <div style={{ padding: '6px 0 4px' }}><QuickAdd hotkey={false} placeholder={`Add to ${s.name}`} defaults={{ project_id: p.id, section_id: s.id }} /></div>
-            </div>
-          );
-        })}
-        {p && !p.is_inbox && <ProjectTools project={p} onDeleted={() => go('today')} />}
+        <div className="group-title">No date {undated.length > 0 && <span className="count">{undated.length}</span>}</div>
+        <TaskList tasks={undated} allTasks={tasks} empty="Everything has a date." reorder={{ field: 'day_order', patch: { due_date: null } }} />
       </>
     );
   } else if (view === 'done') {
     title = 'Completed';
     body = <History />;
+  } else if (project) {
+    title = project.name;
+    defaults = { project_id: project.id };
+    const inProj = tasks.filter((t) => t.project_id === project.id);
+    const secs = sections.filter((s) => s.project_id === project.id);
+    const loose = inProj.filter((t) => !t.section_id).sort((a, b) => a.sort - b.sort);
+    tools = <ProjectMenu project={project} onDeleted={() => go('today')} />;
+    body = (
+      <>
+        <TaskList tasks={loose} allTasks={tasks} showProject={false} empty={secs.length ? null : 'No tasks here yet.'} reorder={{ field: 'sort', patch: { section_id: null, project_id: project.id } }} />
+        {secs.map((s) => {
+          const list = inProj.filter((t) => t.section_id === s.id).sort((a, b) => a.sort - b.sort);
+          return (
+            <div key={s.id}>
+              <div className="group-title">{s.name} <span className="count">{list.length || ''}</span><span className="tools"><SectionMenu section={s} /></span></div>
+              <TaskList tasks={list} allTasks={tasks} showProject={false} reorder={{ field: 'sort', patch: { section_id: s.id, project_id: project.id } }} />
+              <div style={{ padding: '8px 0 4px' }}><QuickAdd hotkey={false} placeholder={`Add to ${s.name}`} defaults={{ project_id: project.id, section_id: s.id }} /></div>
+            </div>
+          );
+        })}
+      </>
+    );
+  } else {
+    title = 'Tasks';
+    body = tasksLoading ? null : <Empty title="That project is gone"><button className="btn" onClick={() => go('today')}>Back to Today</button></Empty>;
   }
 
   return (
     <div className="tasks-layout">
-      <aside className="views">
+      <nav className="views" aria-label="Task views">
         <ViewBtn on={view === 'today'} onClick={() => go('today')} n={counts.today}>Today</ViewBtn>
         <ViewBtn on={view === 'upcoming'} onClick={() => go('upcoming')}>Upcoming</ViewBtn>
         <ViewBtn on={view === 'done'} onClick={() => go('done')}>Completed</ViewBtn>
-        <div className="label">Projects <NewProject onCreated={(p) => { app.reloadTasks(); go('p:' + p.id); }} /></div>
+        <div className="label">Projects <button className="icon-btn sm" title="New project" aria-label="New project" onClick={newProject}><IconPlus /></button></div>
         {projects.map((p) => (
           <ViewBtn key={p.id} on={view === 'p:' + p.id} onClick={() => go('p:' + p.id)} n={counts['p:' + p.id]}>
-            <i style={{ background: colorHex(p.color) }} />{p.name}
+            <i className="swatch" style={{ background: colorHex(p.color) }} />{p.name}
           </ViewBtn>
         ))}
-      </aside>
+        <button className="view-link only-phone" aria-label="New project" onClick={newProject}><IconPlus style={{ width: 14, height: 14 }} /><span className="name">Project</span></button>
+      </nav>
       <section>
-        <div className="page-head"><h1>{title}</h1></div>
-        {view !== 'done' && <div style={{ marginBottom: 8 }}><QuickAdd defaults={defaults} /></div>}
-        {body}
+        <div className="page-head">
+          <div><h1>{title}</h1>{sub && <div className="sub">{sub}</div>}</div>
+          {tools}
+        </div>
+        {view !== 'done' && (project || view === 'today' || view === 'upcoming') && <div style={{ marginBottom: 6 }}><QuickAdd defaults={defaults} placeholder={view === 'upcoming' ? 'Add a task — try “essay friday p1”' : project ? `Add to ${project.name}` : 'Add a task for today'} /></div>}
+        {tasksError ? <LoadError error={tasksError} onRetry={reloadTasks} /> : tasksLoading && view !== 'done' ? <Skeleton rows={6} /> : body}
       </section>
     </div>
   );
 }
 
 function ViewBtn({ on, onClick, n, children }) {
-  return <button className={`view-link ${on ? 'active' : ''}`} onClick={onClick}>{children}{n ? <span className="n">{n}</span> : null}</button>;
+  return <button className={`view-link ${on ? 'active' : ''}`} aria-current={on ? 'page' : undefined} onClick={onClick}><span className="name row nowrap">{children}</span>{n ? <span className="n">{n}</span> : null}</button>;
 }
 
-function NewProject({ onCreated }) {
-  const add = async () => {
-    const name = prompt('New project name');
-    if (name?.trim()) onCreated(await api('/api/projects', { method: 'POST', body: { name } }));
-  };
-  return <button className="icon-btn" style={{ width: 22, height: 22 }} title="New project" onClick={add}>+</button>;
-}
-
-function ProjectTools({ project, onDeleted }) {
-  const { reloadTasks } = useApp();
-  const [busy, setBusy] = useState(false);
+function ProjectMenu({ project, onDeleted }) {
+  const { reloadTasks, attempt, tasks } = useApp();
+  const { confirm, prompt } = useDialog();
+  if (project.is_inbox) return null;
   const addSection = async () => {
-    const name = prompt('Section name');
-    if (!name?.trim()) return;
-    await api('/api/sections', { method: 'POST', body: { project_id: project.id, name: name.trim() } });
-    reloadTasks();
+    const name = await prompt({ title: 'New section', label: 'Section name', confirmLabel: 'Add' });
+    if (name && await attempt(() => api('/api/sections', { method: 'POST', body: { project_id: project.id, name } }))) reloadTasks();
   };
   const rename = async () => {
-    const name = prompt('Rename project', project.name);
-    if (!name?.trim()) return;
-    await api(`/api/projects/${project.id}`, { method: 'PATCH', body: { name: name.trim() } });
-    reloadTasks();
+    const name = await prompt({ title: 'Rename project', label: 'Project name', initial: project.name, confirmLabel: 'Rename' });
+    if (name && name !== project.name && await attempt(() => api(`/api/projects/${project.id}`, { method: 'PATCH', body: { name } }))) reloadTasks();
   };
+  const recolor = async (color) => { if (await attempt(() => api(`/api/projects/${project.id}`, { method: 'PATCH', body: { color } }))) reloadTasks(); };
   const del = async () => {
-    if (!confirm(`Delete “${project.name}” and all its tasks?`)) return;
-    setBusy(true);
-    await api(`/api/projects/${project.id}`, { method: 'DELETE' });
-    reloadTasks(); onDeleted();
+    const n = tasks.filter((t) => t.project_id === project.id).length;
+    const ok = await confirm({ title: `Delete “${project.name}”?`, body: n ? `Its ${n} open task${n === 1 ? '' : 's'} will be deleted too. This can’t be undone.` : 'This can’t be undone.', confirmLabel: 'Delete project', danger: true });
+    if (ok && await attempt(() => api(`/api/projects/${project.id}`, { method: 'DELETE' }))) { onDeleted(); reloadTasks(); }
   };
   return (
-    <div className="row" style={{ marginTop: 24 }}>
-      <button className="btn ghost" onClick={addSection}>+ Section</button>
-      <button className="btn ghost" onClick={rename}>Rename</button>
-      <button className="btn ghost danger" onClick={del} disabled={busy}>Delete project</button>
-    </div>
+    <Popover label="Project options" button={({ toggle, open, props }) => <button className={`icon-btn ${open ? 'on' : ''}`} onClick={toggle} {...props}><IconMore /></button>}>
+      {(close) => (
+        <>
+          <button className="pop-item" role="menuitem" onClick={() => { close(); addSection(); }}>Add section</button>
+          <button className="pop-item" role="menuitem" onClick={() => { close(); rename(); }}>Rename project</button>
+          <div className="pop-sep" />
+          <div className="pop-label">Color</div>
+          <div className="pop-colors">
+            {PALETTE.map((c) => <button key={c} aria-label={c.replace('_', ' ')} aria-pressed={project.color === c} style={{ '--c': colorHex(c) }} onClick={() => { close(); recolor(c); }} />)}
+          </div>
+          <div className="pop-sep" />
+          <button className="pop-item danger" role="menuitem" onClick={() => { close(); del(); }}>Delete project</button>
+        </>
+      )}
+    </Popover>
+  );
+}
+
+function SectionMenu({ section }) {
+  const { reloadTasks, attempt } = useApp();
+  const { confirm, prompt } = useDialog();
+  const rename = async () => {
+    const name = await prompt({ title: 'Rename section', label: 'Section name', initial: section.name, confirmLabel: 'Rename' });
+    if (name && name !== section.name && await attempt(() => api('/api/sections', { method: 'PATCH', body: { id: section.id, name } }))) reloadTasks();
+  };
+  const del = async () => {
+    const ok = await confirm({ title: `Remove “${section.name}”?`, body: 'Its tasks stay in the project.', confirmLabel: 'Remove section', danger: true });
+    if (ok && await attempt(() => api(`/api/sections?id=${encodeURIComponent(section.id)}`, { method: 'DELETE' }))) reloadTasks();
+  };
+  return (
+    <Popover label="Section options" button={({ toggle, open, props }) => <button className={`icon-btn sm ${open ? 'on' : ''}`} onClick={toggle} {...props}><IconMore /></button>}>
+      {(close) => (
+        <>
+          <button className="pop-item" role="menuitem" onClick={() => { close(); rename(); }}>Rename section</button>
+          <button className="pop-item danger" role="menuitem" onClick={() => { close(); del(); }}>Remove section</button>
+        </>
+      )}
+    </Popover>
   );
 }
 
 function History() {
   const h = useApi('/api/history');
-  if (!h.data) return <div className="empty"><span className="spin" /></div>;
-  const byDay = {};
+  if (h.error && !h.data) return <LoadError error={h.error} onRetry={h.reload} />;
+  if (!h.data) return <Skeleton rows={6} />;
+  if (!h.data.items.length) return <Empty title="Nothing completed yet">Finished tasks show up here.</Empty>;
+  const byDay = new Map();
   for (const c of h.data.items) {
     const d = new Date(c.completed_at).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-    (byDay[d] ||= []).push(c);
+    if (!byDay.has(d)) byDay.set(d, []);
+    byDay.get(d).push(c);
   }
-  return Object.entries(byDay).map(([d, list]) => (
+  return [...byDay].map(([d, list]) => (
     <div key={d}>
       <div className="group-title">{d} <span className="count">{list.length}</span></div>
       <ul className="task-list">
         {list.map((c) => (
-          <li key={c.id} className="task done">
-            <span className="check done" style={{ '--prio': 'var(--ok)' }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span>
-            <div className="task-main"><div className="task-title">{c.content}</div>
-              <div className="task-meta"><span>{new Date(c.completed_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
-                {c.project && <span className="proj"><i style={{ background: colorHex(c.color) }} />{c.project}</span>}</div>
+          <li key={c.id} className="task">
+            <span className="check done" style={{ '--prio': 'var(--ok)' }} aria-hidden="true"><IconCheck strokeWidth="2.6" /></span>
+            <div className="task-main" style={{ cursor: 'default' }}>
+              <span className="task-title muted">{c.content}</span>
+              {c.project && <span className="task-proj"><i className="swatch" style={{ background: colorHex(c.color) }} />{c.project}</span>}
+              <div className="task-meta"><span>{new Date(c.completed_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></div>
             </div>
           </li>
         ))}

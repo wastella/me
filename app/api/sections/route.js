@@ -1,8 +1,6 @@
 import { handle, json, body } from '@/lib/http';
-import { db, newId } from '@/lib/db';
-export const POST = handle(async (req) => {
-  const b = await body(req);
-  const id = newId();
-  await (await db()).run('INSERT INTO sections (id, project_id, name, sort) VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort),0)+1 FROM sections WHERE project_id = ?))', id, b.project_id, b.name, b.project_id);
-  return json({ id }, 201);
-});
+import { createSection, updateSection, deleteSection } from '@/lib/projects';
+// POST { project_id, name } · PATCH { id, name } · DELETE ?id=
+export const POST = handle(async (req) => json(await createSection(await body(req)), 201));
+export const PATCH = handle(async (req) => { const b = await body(req); return json(await updateSection(b.id, b)); });
+export const DELETE = handle(async (req) => { await deleteSection(new URL(req.url).searchParams.get('id')); return json({ ok: true }); });

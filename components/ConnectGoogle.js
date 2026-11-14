@@ -1,9 +1,9 @@
 import Link from 'next/link';
-export default function ConnectGoogle({ what = 'your calendar and email' }) {
+export default function ConnectGoogle({ what = 'your calendar' }) {
   return (
     <div className="connect">
       <b>Connect Google to see {what}</b>
-      <p>One-time setup, about 5 minutes.</p>
+      <p>A one-time setup that takes about five minutes.</p>
       <Link className="btn primary" href="/settings">Set up Google</Link>
     </div>
   );
