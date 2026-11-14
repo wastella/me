@@ -1,0 +1,67 @@
+name: Narrate
+options:
+  bundleIdPrefix: idk
+  deploymentTarget:
+    iOS: "18.0"
+    macOS: "15.0"
+  createIntermediateGroups: true
+packages:
+  ZIPFoundation:
+    url: https://github.com/weichsel/ZIPFoundation
+    from: 0.9.19
+  KokoroSwift:
+    url: https://github.com/mlalma/kokoro-ios
+    revision: 4d6d1d8ff8cd012014180c9cd4cf0151e7682354
+  MLXUtilsLibrary:
+    url: https://github.com/mlalma/MLXUtilsLibrary.git
+    exactVersion: 0.0.6
+  mlx-swift:
+    url: https://github.com/ml-explore/mlx-swift
+    exactVersion: 0.30.2
+settings:
+  base:
+    DEVELOPMENT_TEAM: QM2CU9BH99
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    ENABLE_PREVIEWS: YES
+    GENERATE_INFOPLIST_FILE: YES
+targets:
+  Narrate:
+    type: application
+    platform: iOS
+    sources:
+      - Shared
+      - path: iOS
+        excludes: ["Info.plist", "*.entitlements"]
+    dependencies:
+      - package: ZIPFoundation
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: idk.Narrate
+        TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_FILE: iOS/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": iOS/Narrate-Simulator.entitlements
+  NarrateMac:
+    type: application
+    platform: macOS
+    sources:
+      - Shared
+      - path: macOS
+        excludes: ["Info.plist"]
+    dependencies:
+      - package: ZIPFoundation
+      - package: KokoroSwift
+        embed: true
+      - package: MLXUtilsLibrary
+      - package: mlx-swift
+        product: MLX
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: idk.Narrate.mac
+        PRODUCT_NAME: Narrate
+        INFOPLIST_FILE: macOS/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: NO
