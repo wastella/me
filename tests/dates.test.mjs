@@ -103,3 +103,18 @@ test('humanDate and humanTime', () => {
   assert.equal(humanTime('12:00'), '12pm');
   assert.equal(humanTime(''), '');
 });
+
+test('repeat rules read the same however they were typed', async () => {
+  const { humanRecurrence } = await import('../lib/dates.js');
+  assert.equal(humanRecurrence('ev day'), 'Daily');
+  assert.equal(humanRecurrence('every day'), 'Daily');
+  assert.equal(humanRecurrence('every day 7am'), 'Daily');
+  assert.equal(humanRecurrence('every saturday'), 'Every Sat');
+  assert.equal(humanRecurrence('every other sunday'), 'Every other Sun');
+  assert.equal(humanRecurrence('every 2 days'), 'Every 2 days');
+  assert.equal(humanRecurrence('every 2 weeks'), 'Every other week');
+  assert.equal(humanRecurrence('every mon, wed and fri'), 'Every Mon, Wed, Fri');
+  assert.equal(humanRecurrence('every weekday'), 'Weekdays');
+  assert.equal(humanRecurrence('every 15th'), 'Monthly on the 15th');
+  assert.equal(humanRecurrence('whenever'), 'whenever');
+});

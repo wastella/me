@@ -2,7 +2,7 @@
 import { useEffect, useId, useState } from 'react';
 import { useApp } from './AppProvider';
 import { Empty, Popover } from './ui';
-import { humanDate, humanTime, todayStr, diffDays, quickDates, datePatch, parse } from '@/lib/dates';
+import { humanDate, humanTime, todayStr, diffDays, quickDates, datePatch, parse, humanRecurrence } from '@/lib/dates';
 import { colorHex } from '@/lib/colors';
 import { IconCheck, IconRepeat, IconFlag, IconCal, IconMore } from './Icons';
 
@@ -34,9 +34,9 @@ export default function TaskItem({ task, showProject = true, showDate = true, su
   const open = () => { if (!justDragged()) openTask(task); };
 
   const meta = [];
-  if (task.due_date && showDate) meta.push(<span key="d" className={dueClass(task.due_date)}>{humanDate(task.due_date)}{task.due_time ? ` ${humanTime(task.due_time)}` : ''}</span>);
+  if (task.due_date && showDate) meta.push(<span key="d" className={dueClass(task.due_date)}><IconCal />{humanDate(task.due_date)}{task.due_time ? ` ${humanTime(task.due_time)}` : ''}</span>);
   else if (task.due_time) meta.push(<span key="t">{humanTime(task.due_time)}</span>);
-  if (task.recurring) meta.push(<span key="r" title={`Repeats ${task.due_string || ''}`}><IconRepeat />{task.due_string}</span>);
+  if (task.recurring) meta.push(<span key="r"><IconRepeat />{humanRecurrence(task.due_string)}</span>);
   if (task.deadline) meta.push(<span key="f" className={deadlineClass(task.deadline)}><IconFlag />Due {humanDate(task.deadline).toLowerCase()}</span>);
 
   return (

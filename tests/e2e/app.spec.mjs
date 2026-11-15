@@ -98,7 +98,7 @@ test.describe('tasks', () => {
     await page.keyboard.press('Escape');
     await expect(sheet).toHaveCount(0);
     const r = row(page, renamed);
-    await expect(r).toContainText('every 2 days');
+    await expect(r).toContainText('Every 2 days');
     await expect(r).toContainText('Due tomorrow');
     await page.reload();
     await expect(row(page, renamed)).toContainText('Due tomorrow');   // it really saved
