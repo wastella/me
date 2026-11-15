@@ -78,7 +78,7 @@ function Tasks() {
           const list = tasks.filter((t) => t.due_date === d).sort(sortTasks);
           return (
             <div key={d}>
-              <div className={`group-title ${list.length ? '' : 'quiet'}`}>{i < 6 ? humanDate(d) : parse(d).toLocaleDateString(undefined, { weekday: 'long' })} <span className="count">{parse(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{list.length ? ` · ${list.length}` : ''}</span></div>
+              <div className={`group-title day ${list.length ? '' : 'quiet'}`}>{parse(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} · {i < 6 ? humanDate(d) : parse(d).toLocaleDateString(undefined, { weekday: 'long' })}</div>
               <TaskList tasks={list} allTasks={tasks} showDate={false} reorder={{ field: 'day_order', patch: { due_date: d } }} />
             </div>
           );

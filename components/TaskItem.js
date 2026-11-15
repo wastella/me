@@ -11,7 +11,8 @@ const PRIO = { 1: 'var(--p1)', 2: 'var(--p2)', 3: 'var(--p3)', 4: 'var(--p4)' };
 // Unfinished tasks roll forward each day, so "past" just means today.
 export function dueClass(date) {
   if (!date) return '';
-  return diffDays(date, todayStr()) <= 0 ? 'today' : '';
+  const d = diffDays(date, todayStr());
+  return d <= 0 ? 'today' : d === 1 ? 'tomorrow' : d < 7 ? 'week' : '';
 }
 function deadlineClass(date) {
   const d = diffDays(date, todayStr());
@@ -46,10 +47,9 @@ export default function TaskItem({ task, showProject = true, showDate = true, su
       </button>
       <div className="task-main" role="button" tabIndex={0} onClick={open} onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) open(); }}>
         <span className="task-title">{task.content}</span>
-        {showProject && project && <span className="task-proj"><i className="swatch" style={{ background: colorHex(project.color) }} />{project.name}</span>}
         {task.description && <div className="task-desc">{task.description.split('\n')[0]}</div>}
         {(meta.length > 0 || (showProject && project)) && (
-          <div className="task-meta">{meta}{showProject && project && <span className="proj-m"><i className="swatch" style={{ background: colorHex(project.color) }} />{project.name}</span>}</div>
+          <div className="task-meta">{meta}{showProject && project && <span className="proj-m">{project.name}<i className="swatch" style={{ background: colorHex(project.color) }} /></span>}</div>
         )}
       </div>
       <div className="task-actions">
