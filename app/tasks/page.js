@@ -1,5 +1,5 @@
 'use client';
-import { Suspense, useMemo } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useApp } from '@/components/AppProvider';
 import QuickAdd from '@/components/QuickAdd';
@@ -24,6 +24,19 @@ function Tasks() {
   const view = params.get('view') || 'today';
   const go = (v) => router.push(`/tasks?view=${encodeURIComponent(v)}`);
   const today = todayStr();
+  const [search, setSearch] = useState('');
+  const searchRef = useRef(null);
+  // "/" jumps to search.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey || document.body.classList.contains('sheet-open')) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+      e.preventDefault(); searchRef.current?.focus();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  const term = search.trim().toLowerCase();
 
   const counts = useMemo(() => {
     const c = { today: 0 };
@@ -44,7 +57,12 @@ function Tasks() {
 
   const project = view.startsWith('p:') ? projectById[view.slice(2)] : null;
   let title = 'Today', sub = null, body = null, defaults = {}, tools = null;
-  if (view === 'today') {
+  if (term) {
+    const hits = tasks.filter((t) => `${t.content}\n${t.description || ''}\n${projectById[t.project_id]?.name || ''}`.toLowerCase().includes(term)).sort(sortTasks);
+    title = 'Search';
+    sub = `${hits.length} ${hits.length === 1 ? 'task' : 'tasks'} found`;
+    body = <TaskList tasks={hits} empty="No tasks match." />;
+  } else if (view === 'today') {
     defaults = { due_date: today };
     const list = tasks.filter((t) => t.due_date && t.due_date <= today).sort(sortTasks);
     sub = mounted ? parse(today).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : ' ';
@@ -56,11 +74,11 @@ function Tasks() {
     const undated = tasks.filter((t) => !t.due_date && !t.parent_id).sort(sortTasks);
     body = (
       <>
-        {days.map((d) => {
+        {days.map((d, i) => {
           const list = tasks.filter((t) => t.due_date === d).sort(sortTasks);
           return (
             <div key={d}>
-              <div className="group-title">{humanDate(d)} <span className="count">{parse(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{list.length ? ` · ${list.length}` : ''}</span></div>
+              <div className={`group-title ${list.length ? '' : 'quiet'}`}>{i < 6 ? humanDate(d) : parse(d).toLocaleDateString(undefined, { weekday: 'long' })} <span className="count">{parse(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}{list.length ? ` · ${list.length}` : ''}</span></div>
               <TaskList tasks={list} allTasks={tasks} showDate={false} reorder={{ field: 'day_order', patch: { due_date: d } }} />
             </div>
           );
@@ -117,10 +135,13 @@ function Tasks() {
       <section>
         <div className="page-head">
           <div><h1>{title}</h1>{sub && <div className="sub">{sub}</div>}</div>
-          {tools}
+          <div className="head-tools notes-tools">
+            <input ref={searchRef} className="input notes-search" type="search" placeholder="Search tasks" aria-label="Search tasks" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') { setSearch(''); e.currentTarget.blur(); } }} />
+            {!term && tools}
+          </div>
         </div>
-        {view !== 'done' && (project || view === 'today' || view === 'upcoming') && <div style={{ marginBottom: 6 }}><QuickAdd defaults={defaults} placeholder={view === 'upcoming' ? 'Add a task — try “essay friday p1”' : project ? `Add to ${project.name}` : 'Add a task for today'} /></div>}
-        {tasksError ? <LoadError error={tasksError} onRetry={reloadTasks} /> : tasksLoading && view !== 'done' ? <Skeleton rows={6} /> : body}
+        {!term && view !== 'done' && (project || view === 'today' || view === 'upcoming') && <div style={{ marginBottom: 6 }}><QuickAdd defaults={defaults} placeholder={view === 'upcoming' ? 'Add a task — try “essay friday p1”' : project ? `Add to ${project.name}` : 'Add a task for today'} /></div>}
+        {tasksError ? <LoadError error={tasksError} onRetry={reloadTasks} /> : tasksLoading && (term || view !== 'done') ? <Skeleton rows={6} /> : body}
       </section>
     </div>
   );

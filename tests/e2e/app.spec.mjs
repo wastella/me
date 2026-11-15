@@ -210,6 +210,21 @@ test.describe('tasks', () => {
     await expect(row(page, name)).toBeVisible();
   });
 
+  test('row menu reschedules, and search finds the task', async ({ page, phone }) => {
+    test.skip(phone, 'the row menu appears on hover, which a phone does not have');
+    const name = unique('Hover me');
+    await page.goto('/tasks');
+    await addTask(page, name);
+    await row(page, name).hover();
+    await row(page, name).getByRole('button', { name: 'Reschedule' }).click();
+    await page.getByRole('menuitem', { name: /Tomorrow/ }).click();
+    await expect(row(page, name)).toHaveCount(0);
+    await page.keyboard.press('/');
+    await expect(page.getByRole('searchbox', { name: 'Search tasks' })).toBeFocused();
+    await page.keyboard.type(name.slice(-6));
+    await expect(row(page, name)).toContainText('Tomorrow');
+  });
+
   test('one tap moves a task to tomorrow', async ({ page }) => {
     const name = unique('Move me');
     await page.goto('/tasks');

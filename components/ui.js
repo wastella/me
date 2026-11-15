@@ -163,3 +163,16 @@ export function useMounted() {
   useEffect(() => setM(true), []);
   return m;
 }
+
+// A date or time shown as plain words ("Tomorrow", "5pm"); clicking it opens
+// the system picker. `onClear` adds a small ✕.
+export function PickerPill({ type = 'date', id, label, value, text, onChange, onClear }) {
+  return (
+    <span className={`pill ${value ? 'set' : ''}`}>
+      <span>{text}</span>
+      <input id={id} type={type} aria-label={label} value={value || ''} onChange={(e) => onChange(e.target.value)}
+        onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }} />
+      {onClear && <button type="button" className="pill-x" aria-label={`Clear ${label || type}`} onClick={onClear}><IconX /></button>}
+    </span>
+  );
+}

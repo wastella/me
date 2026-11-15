@@ -1,10 +1,10 @@
 'use client';
 import { useEffect, useId, useState } from 'react';
 import { useApp } from './AppProvider';
-import { Empty } from './ui';
-import { humanDate, humanTime, todayStr, diffDays } from '@/lib/dates';
+import { Empty, Popover } from './ui';
+import { humanDate, humanTime, todayStr, diffDays, quickDates, datePatch, parse } from '@/lib/dates';
 import { colorHex } from '@/lib/colors';
-import { IconCheck, IconRepeat, IconTrash, IconFlag } from './Icons';
+import { IconCheck, IconRepeat, IconFlag, IconCal, IconMore } from './Icons';
 
 const PRIO = { 1: 'var(--p1)', 2: 'var(--p2)', 3: 'var(--p3)', 4: 'var(--p4)' };
 
@@ -20,7 +20,7 @@ function deadlineClass(date) {
 
 // One task row. `showDate` is off in lists that are already about one day.
 export default function TaskItem({ task, showProject = true, showDate = true, sub = false, drag }) {
-  const { completeTask, openTask, deleteTask, projectById, justDragged } = useApp();
+  const { completeTask, openTask, deleteTask, updateTask, projects, projectById, justDragged } = useApp();
   const [done, setDone] = useState(false);
   const project = projectById[task.project_id];
 
@@ -53,7 +53,45 @@ export default function TaskItem({ task, showProject = true, showDate = true, su
         )}
       </div>
       <div className="task-actions">
-        <button className="icon-btn sm" title="Delete" aria-label={`Delete “${task.content}”`} onClick={() => deleteTask(task)}><IconTrash /></button>
+        <Popover label="Reschedule" button={({ toggle, open: on, props }) => <button className={`icon-btn sm ${on ? 'on' : ''}`} onClick={toggle} {...props}><IconCal /></button>}>
+          {(close) => (
+            <>
+              {quickDates().map(([text, value]) => (
+                <button key={text} className="pop-item" role="menuitem" onClick={() => { close(); updateTask(task.id, datePatch(value)); }}>
+                  <span className="grow">{text}</span>{value && <span className="hint">{parse(value).toLocaleDateString(undefined, { weekday: 'short' })}</span>}
+                </button>
+              ))}
+              <div className="pop-sep" />
+              <input className="input" type="date" aria-label="Pick a date" value={task.due_date || ''} onChange={(e) => { close(); updateTask(task.id, datePatch(e.target.value)); }} />
+            </>
+          )}
+        </Popover>
+        <Popover label="More" button={({ toggle, open: on, props }) => <button className={`icon-btn sm ${on ? 'on' : ''}`} onClick={toggle} {...props}><IconMore /></button>}>
+          {(close) => (
+            <>
+              <div className="pop-label">Priority</div>
+              <div className="pop-prio">
+                {[1, 2, 3, 4].map((n) => (
+                  <button key={n} aria-label={n < 4 ? `Priority ${n}` : 'No priority'} title={n < 4 ? `Priority ${n}` : 'No priority'} aria-pressed={task.priority === n} style={{ '--c': PRIO[n] }}
+                    onClick={() => { close(); updateTask(task.id, { priority: n }); }}><IconFlag /></button>
+                ))}
+              </div>
+              {!sub && projects.length > 1 && (
+                <>
+                  <div className="pop-sep" />
+                  <div className="pop-label">Move to</div>
+                  {projects.filter((p) => p.id !== task.project_id).map((p) => (
+                    <button key={p.id} className="pop-item" role="menuitem" onClick={() => { close(); updateTask(task.id, { project_id: p.id, section_id: null }); }}>
+                      <i className="swatch" style={{ background: colorHex(p.color) }} /><span>{p.name}</span>
+                    </button>
+                  ))}
+                </>
+              )}
+              <div className="pop-sep" />
+              <button className="pop-item danger" role="menuitem" onClick={() => { close(); deleteTask(task); }}>Delete</button>
+            </>
+          )}
+        </Popover>
       </div>
     </li>
   );

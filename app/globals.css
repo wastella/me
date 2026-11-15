@@ -220,10 +220,10 @@ input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--text); m
 .task:last-child { border-bottom-color: transparent; }
 .task.sub { padding-left: 34px; }
 .task[data-list]:not([data-kid]) { cursor: grab; }
-.check { position: relative; flex: none; width: 19px; height: 19px; margin-top: 1px; border-radius: 50%; border: 1.5px solid var(--prio, var(--p4)); background: transparent; display: grid; place-items: center; padding: 0; transition: background var(--fast), transform var(--fast); }
+.check { position: relative; flex: none; width: 19px; height: 19px; margin-top: 1px; border-radius: 50%; border: 1.5px solid var(--prio, var(--p4)); background: color-mix(in srgb, var(--prio, var(--p4)) 9%, transparent); display: grid; place-items: center; padding: 0; transition: background var(--fast), transform var(--fast); }
 .check::before { content: ""; position: absolute; inset: -10px; }
 .check svg { width: 11px; height: 11px; opacity: 0; color: var(--prio, var(--p4)); transition: opacity var(--fast); }
-.check:hover { background: color-mix(in srgb, var(--prio, var(--p4)) 16%, transparent); }
+.check:hover { background: color-mix(in srgb, var(--prio, var(--p4)) 22%, transparent); }
 .check:hover svg { opacity: 1; }
 .check:active { transform: scale(.9); }
 .check.done { background: var(--prio, var(--p4)); animation: tick var(--med) var(--ease); }
@@ -245,8 +245,28 @@ span.check::before { display: none; }
 .task-meta .late { color: var(--danger); }
 .task-meta .proj-m { display: none; }
 .task-meta:not(:has(> :not(.proj-m))) { display: none; }
-.task-actions { display: flex; gap: 2px; opacity: 0; margin: -4px 0; transition: opacity var(--fast); }
-.task:hover .task-actions, .task:focus-within .task-actions { opacity: 1; }
+.task-actions { position: absolute; right: 0; top: 5px; z-index: 2; display: flex; gap: 2px; padding-left: 14px; opacity: 0; pointer-events: none; background: linear-gradient(to right, transparent, var(--row-bg, var(--bg)) 14px); transition: opacity var(--fast); }
+.task:hover .task-actions, .task:focus-within .task-actions, .task-actions:has(.on) { opacity: 1; pointer-events: auto; }
+.card, .sheet { --row-bg: var(--panel); }
+.task-actions .pop .input { margin: 4px; width: calc(100% - 8px); }
+.pop-item .hint { color: var(--faint); font-size: 12px; }
+.pop-prio { display: flex; gap: 4px; padding: 2px 6px 6px; }
+.pop-prio button { width: 34px; height: 30px; border-radius: 7px; border: 0; background: transparent; color: var(--c); display: grid; place-items: center; }
+.pop-prio button:hover, .pop-prio button[aria-pressed="true"] { background: var(--panel-2); }
+.pop-prio svg { width: 16px; height: 16px; }
+.pop-prio button[aria-pressed="true"] svg { fill: color-mix(in srgb, var(--c) 35%, transparent); }
+.pill { position: relative; display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px; border-radius: 8px; background: var(--panel-2); color: var(--muted); font-size: 13px; font-weight: 500; white-space: nowrap; transition: background var(--fast), color var(--fast); }
+.pill.set { color: var(--text); }
+.pill:hover { background: var(--panel-3); }
+.pill:focus-within { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent); }
+.pill input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; cursor: pointer; }
+.pill-x { position: relative; z-index: 1; width: 18px; height: 18px; margin-right: -4px; border: 0; border-radius: 50%; background: transparent; color: var(--faint); display: grid; place-items: center; padding: 0; }
+.pill-x:hover { color: var(--text); background: var(--panel); }
+.pill-x svg { width: 11px; height: 11px; }
+.editor-top { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 11px; align-items: start; }
+.editor-top .check { margin-top: 6px; }
+.editor-top .editor-notes { grid-column: 2; }
+.group-title.quiet { padding-top: 12px; padding-bottom: 0; border-bottom-color: transparent; color: var(--faint); font-weight: 500; }
 .task.pending { pointer-events: none; }
 .date-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 .quick-dates { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -536,13 +556,16 @@ body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select:
 
   .scrim, .scrim.drawer { place-items: end stretch; padding: 0; }
   .sheet, .sheet.wide, .sheet.drawer { width: 100%; height: auto; max-height: calc(100dvh - 28px - var(--safe-t)); border-radius: 22px 22px 0 0; border-width: 1px 0 0; animation: slide-up var(--med) var(--ease); }
-  .sheet.drawer { height: calc(100dvh - 28px - var(--safe-t)); }
+  .sheet.drawer { height: auto; min-height: 55dvh; }
   .grabber { display: block; width: 36px; height: 4px; border-radius: 4px; background: var(--line-2); margin: 8px auto 0; flex: none; }
   .sheet-head { padding: 8px 10px 4px 18px; }
   .sheet-body { padding: 8px 18px calc(20px + var(--safe-b)); }
   .dialog-actions .btn { flex: 1; height: 44px; }
   .props { grid-template-columns: 78px minmax(0, 1fr); gap: 10px 12px; }
   button.chip { height: 32px; padding: 0 12px; font-size: 13.5px; }
+  .pill { height: 36px; padding: 0 13px; font-size: 15px; border-radius: 10px; }
+  .pill-x { width: 24px; height: 24px; }
+  .group-title.quiet { padding-top: 14px; }
   .pop-item { padding: 11px 10px; font-size: 15px; }
 
   .when-row { flex-wrap: wrap; }
