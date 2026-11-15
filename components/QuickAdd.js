@@ -7,10 +7,9 @@ import { IconPlus } from './Icons';
 
 // One-line task entry. Understands dates, repeats, p1–p4 and #Project as you
 // type, and shows what it understood underneath before you press Enter.
-export default function QuickAdd({ defaults = {}, placeholder = 'Add a task', hotkey = true, label }) {
+export default function QuickAdd({ defaults = {}, placeholder = 'Add a task', hotkey = true, label, autoFocus = false, onAdded }) {
   const { addTask, projects, projectById } = useApp();
   const [text, setText] = useState('');
-  const [busy, setBusy] = useState(false);
   const ref = useRef();
 
   useEffect(() => {
@@ -29,11 +28,12 @@ export default function QuickAdd({ defaults = {}, placeholder = 'Add a task', ho
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!text.trim() || busy) return;
-    setBusy(true);
-    const added = await addTask({ text, ...defaults });
-    setBusy(false);
-    if (added) { setText(''); ref.current?.focus(); }   // on failure the text stays so nothing is lost
+    const sent = text;
+    if (!sent.trim()) return;
+    setText(''); ref.current?.focus();   // ready for the next one straight away
+    const added = await addTask({ text: sent, ...defaults });
+    if (added) onAdded?.();
+    else setText((now) => now || sent);   // if it didn't save, the text comes back so nothing is lost
   };
 
   const chips = preview && [
@@ -48,10 +48,10 @@ export default function QuickAdd({ defaults = {}, placeholder = 'Add a task', ho
       <div className="quickadd">
         <span className="plus" aria-hidden="true"><IconPlus /></span>
         <input ref={ref} value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} aria-label={label || placeholder}
-          enterKeyHint="done" autoComplete="off" autoCapitalize="sentences"
+          enterKeyHint="done" autoComplete="off" autoCapitalize="sentences" data-qa-hotkey={hotkey ? '' : undefined} data-autofocus={autoFocus ? '' : undefined}
           onKeyDown={(e) => { if (e.key === 'Escape') { setText(''); e.currentTarget.blur(); } }} />
         {hotkey && !text && <span className="kbd" aria-hidden="true">Q</span>}
-        {text.trim() && <button className="btn primary sm" disabled={busy}>{busy ? 'Adding…' : 'Add'}</button>}
+        {text.trim() && <button className="btn primary sm">Add</button>}
       </div>
       {chips?.length > 0 && <div className="qa-preview" aria-live="polite">{chips}</div>}
     </form>

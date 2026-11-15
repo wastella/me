@@ -3,12 +3,18 @@ import { useEffect, useRef, useState } from 'react';
 import { useApp } from './AppProvider';
 import { Sheet, Segmented, useAutoGrow } from './ui';
 import { IconTrash } from './Icons';
-import { parseRecurrence, firstDue } from '@/lib/dates';
+import { parseRecurrence, firstDue, todayStr, addDays, dow } from '@/lib/dates';
 import { quickAdd } from '@/lib/quickadd';
 import { TaskList } from './TaskItem';
 import QuickAdd from './QuickAdd';
 
 const PRIORITIES = [[1, 'P1', 'Highest', { '--c': 'var(--p1)' }], [2, 'P2', 'High', { '--c': 'var(--p2)' }], [3, 'P3', 'Medium', { '--c': 'var(--p3)' }], [4, 'None', 'No priority', { '--c': 'var(--text)' }]];
+
+// One-tap dates: today, tomorrow, the coming Monday, or none.
+function quickDates() {
+  const today = todayStr();
+  return [['Today', today], ['Tomorrow', addDays(today, 1)], ['Next week', addDays(today, ((8 - dow(today)) % 7) || 7)], ['No date', '']];
+}
 
 // Task details: a side panel on a computer, a sheet on a phone. Every field
 // saves as soon as you leave it; there is no Save button.
@@ -63,9 +69,16 @@ export default function TaskEditor({ task, onClose }) {
 
       <div className="props">
         <label htmlFor="te-date">Date</label>
-        <div className="row nowrap">
-          <input id="te-date" className="input" type="date" value={f.due_date || ''} onChange={(e) => setDate(e.target.value)} />
-          <input className="input" type="time" aria-label="Time" value={f.due_time || ''} disabled={!f.due_date} onChange={(e) => save({ due_time: e.target.value || null })} />
+        <div className="date-field">
+          <div className="row nowrap">
+            <input id="te-date" className="input" type="date" value={f.due_date || ''} onChange={(e) => setDate(e.target.value)} />
+            <input className="input" type="time" aria-label="Time" value={f.due_time || ''} disabled={!f.due_date} onChange={(e) => save({ due_time: e.target.value || null })} />
+          </div>
+          <div className="quick-dates" role="group" aria-label="Move to">
+            {quickDates().map(([text, value]) => (
+              <button key={text} type="button" className="chip" aria-pressed={(f.due_date || '') === value} onClick={() => setDate(value)}>{text}</button>
+            ))}
+          </div>
         </div>
         <label htmlFor="te-repeat">Repeat</label>
         <div className="field">

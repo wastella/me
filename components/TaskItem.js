@@ -40,7 +40,7 @@ export default function TaskItem({ task, showProject = true, showDate = true, su
   if (task.deadline) meta.push(<span key="f" className={deadlineClass(task.deadline)}><IconFlag />Due {humanDate(task.deadline).toLowerCase()}</span>);
 
   return (
-    <li className={`task ${sub ? 'sub' : ''} ${done ? 'done' : ''} ${drag?.className || ''}`} {...(drag?.props || {})}>
+    <li className={`task ${sub ? 'sub' : ''} ${done ? 'done' : ''} ${String(task.id).startsWith('tmp-') ? 'pending' : ''} ${drag?.className || ''}`} {...(drag?.props || {})}>
       <button className={`check ${done ? 'done' : ''}`} style={{ '--prio': PRIO[task.priority] }} onClick={onCheck} aria-label={`Complete “${task.content}”`}>
         <IconCheck strokeWidth="2.6" />
       </button>

@@ -194,6 +194,33 @@ test.describe('tasks', () => {
     await page.keyboard.press('Escape');
     await expect(quickAdd(page)).toHaveValue('');
   });
+
+  test('keyboard: Q adds a task from a screen with no add box', async ({ page, phone }) => {
+    test.skip(phone, 'keyboard shortcuts are for the computer');
+    const name = unique('From notes');
+    await page.goto('/notes');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Notes');
+    await page.keyboard.press('q');
+    const sheet = page.getByRole('dialog', { name: 'Add a task' });
+    await expect(sheet.getByRole('textbox')).toBeFocused();
+    await page.keyboard.type(name);
+    await page.keyboard.press('Enter');
+    await expect(sheet).toHaveCount(0);
+    await page.goto('/tasks');
+    await expect(row(page, name)).toBeVisible();
+  });
+
+  test('one tap moves a task to tomorrow', async ({ page }) => {
+    const name = unique('Move me');
+    await page.goto('/tasks');
+    await addTask(page, name);
+    await row(page, name).getByText(name).click();
+    const sheet = page.getByRole('dialog', { name: 'Task details' });
+    await sheet.getByRole('button', { name: 'Tomorrow' }).click();
+    await expect(sheet.getByLabel('Date', { exact: true })).toHaveValue(await localDate(page, 1));
+    await page.keyboard.press('Escape');
+    await expect(row(page, name)).toHaveCount(0);
+  });
 });
 
 test.describe('home', () => {

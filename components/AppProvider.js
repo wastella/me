@@ -1,12 +1,27 @@
 'use client';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, useApi } from '@/lib/client';
-import { humanDate } from '@/lib/dates';
+import { humanDate, todayStr } from '@/lib/dates';
+import { quickAdd } from '@/lib/quickadd';
 import TaskEditor from './TaskEditor';
-import { useDialog } from './ui';
+import QuickAdd from './QuickAdd';
+import { Sheet, useDialog } from './ui';
 
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
+
+// A stand-in row for a task that is still being saved, worked out the same
+// way the server will (dates, priority and #Project read from the text).
+let drafts = 0;
+function draftTask(input, projects) {
+  const p = quickAdd(input.text, { projects });
+  return {
+    id: `tmp-${Date.now()}-${drafts++}`, content: p.content, description: '', priority: p.priority,
+    due_date: p.due_date || input.due_date || null, due_time: p.due_time, due_string: p.due_string, recurring: p.recurring, deadline: null,
+    project_id: input.project_id || p.project_id || projects.find((x) => x.is_inbox)?.id, section_id: input.section_id || null, parent_id: input.parent_id || null,
+    sort: 1e9, day_order: 1e9, created_at: new Date().toISOString(),
+  };
+}
 
 // A thin strip at the top of the page while the device has no connection.
 export function OfflineBanner() {
@@ -21,6 +36,7 @@ export default function AppProvider({ children }) {
   const [toast, setToast] = useState(null);
   const [offline, setOffline] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [adding, setAdding] = useState(false);
   const [drag, setDrag] = useState(null);          // { id, title, x, y, target: { list, index } }
   const lists = useRef(new Map());                 // list key -> { order, reorder }
   const draggedAt = useRef(0);
@@ -56,12 +72,32 @@ export default function AppProvider({ children }) {
   const data = tasksQ.data || { projects: [], sections: [], labels: [], tasks: [] };
   const projectById = useMemo(() => Object.fromEntries(data.projects.map((p) => [p.id, p])), [data.projects]);
 
+  // The new task shows in the list at once; the saved version replaces it a moment later.
   const addTask = useCallback((input) => attempt(async () => {
-    const t = await api('/api/tasks', { method: 'POST', body: input });
+    const draft = input.text ? draftTask(input, data.projects) : null;
+    if (draft) tasksQ.setData((d) => d && { ...d, tasks: [...d.tasks, draft] });
+    let t;
+    try { t = await api('/api/tasks', { method: 'POST', body: input }); }
+    catch (e) { if (draft) tasksQ.setData((d) => d && { ...d, tasks: d.tasks.filter((x) => x.id !== draft.id) }); throw e; }
+    if (draft) tasksQ.setData((d) => d && { ...d, tasks: d.tasks.map((x) => (x.id === draft.id ? { ...draft, ...t } : x)) });
     tasksQ.reload();
     showToast(`Added “${t.content}”${t.due_date ? ` · ${humanDate(t.due_date)}` : ''}`);
     return t;
-  }), [attempt, tasksQ, showToast]);
+  }), [attempt, tasksQ, showToast, data.projects]);
+
+  // Q (or ⌘N in the Mac app) adds a task from any screen. Screens with their
+  // own add box handle the key themselves.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'q' || e.metaKey || e.ctrlKey || e.altKey || window.location.pathname === '/login') return;
+      const a = document.activeElement;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(a?.tagName) || a?.isContentEditable || document.body.classList.contains('sheet-open')) return;
+      if (document.querySelector('input[data-qa-hotkey]')) return;
+      e.preventDefault(); setAdding(true);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const updateTask = useCallback((id, patch) => attempt(async () => {
     tasksQ.setData((d) => d && { ...d, tasks: d.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) });
@@ -192,7 +228,7 @@ export default function AppProvider({ children }) {
     status: status.data, reloadStatus: status.reload,
     addTask, updateTask, completeTask, deleteTask, showToast, reorderTasks, attempt, offline,
     drag, startDrag, registerList, justDragged: () => Date.now() - draggedAt.current < 250,
-    openTask: (t) => setEditing(t.id),
+    openTask: (t) => { if (!String(t.id).startsWith('tmp-')) setEditing(t.id); },
   };
   const editingTask = editing && data.tasks.find((t) => t.id === editing);
 
@@ -200,6 +236,11 @@ export default function AppProvider({ children }) {
     <Ctx.Provider value={value}>
       {children}
       {editingTask && <TaskEditor task={editingTask} onClose={() => setEditing(null)} />}
+      {adding && (
+        <Sheet title="Add a task" onClose={() => setAdding(false)}>
+          <QuickAdd hotkey={false} autoFocus defaults={{ due_date: todayStr() }} placeholder="Add a task for today" onAdded={() => setAdding(false)} />
+        </Sheet>
+      )}
       {drag && <div className="drag-ghost" style={{ left: drag.x + 12, top: drag.y + 8 }}>{drag.title}</div>}
       {toast && (
         <div key={toast.key} className={`toast ${toast.error ? 'error' : ''}`} role={toast.error ? 'alert' : 'status'}>

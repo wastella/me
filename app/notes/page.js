@@ -169,12 +169,19 @@ function NoteEditor({ note, cats, onClose }) {
   const [pinned, setPinned] = useState(!!note.pinned);
   const [error, setError] = useState('');
   useAutoGrow(ref, text, 180);
+  // Saves a moment after you stop typing, so closing the app mid-note loses nothing.
+  const saved = useRef(note.body);
+  useEffect(() => {
+    if (!text.trim() || text === saved.current) return;
+    const t = setTimeout(() => { api(`/api/notes/${note.id}`, { method: 'PATCH', body: { body: text } }).then(() => { saved.current = text; }).catch(() => {}); }, 800);
+    return () => clearTimeout(t);
+  }, [text, note.id]);
   // On a computer, open with the cursor at the end, ready to keep writing.
   useEffect(() => { const el = ref.current; if (el && !matchMedia('(hover: none)').matches) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, []);
 
   const close = async () => {
     const patch = {};
-    if (text.trim() !== note.body) patch.body = text;
+    if (text.trim() !== saved.current.trim()) patch.body = text;
     if ((cat || null) !== (note.category_id || null)) patch.category_id = cat || null;
     if (pinned !== !!note.pinned) patch.pinned = pinned;
     if (!text.trim()) { setError('A note needs some text. To get rid of it, use the bin.'); return; }
