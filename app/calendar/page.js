@@ -5,8 +5,12 @@ import { useApp } from '@/components/AppProvider';
 import ConnectGoogle from '@/components/ConnectGoogle';
 import { Sheet, Segmented, Popover, LoadError, useDialog, useMounted } from '@/components/ui';
 import { api, useApi, clockTime } from '@/lib/client';
-import { fmt, addDays, addMonths, parse, todayStr, humanTime } from '@/lib/dates';
+import { fmt, addDays, addMonths, parse, todayStr, humanTime, diffDays } from '@/lib/dates';
 import { IconChevL, IconChevR, IconExt, IconTrash, IconPlus, IconSliders, IconMap, IconClock } from '@/components/Icons';
+
+const pad = (n) => String(n).padStart(2, '0');
+const hm = (min) => { const m = ((Math.round(min) % 1440) + 1440) % 1440; return `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; };
+const toMin = (s) => { const [h, m] = (s || '0:0').split(':').map(Number); return h * 60 + m; };
 
 const HOUR = 52;
 const startOfWeek = (d) => { const x = parse(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return fmt(x); };
@@ -33,7 +37,10 @@ export default function CalendarPage() {
   const [cursor, setCursor] = useState(today);
   const [showTasks, setShowTasks] = useState(false);
   const [sel, setSel] = useState(null);
-  const [creating, setCreating] = useState(null);
+  const [creating, setCreating] = useState(null);   // { date, startMin, mins }
+  const [editing, setEditing] = useState(null);
+  const [draft, setDraft] = useState(null);         // the slot being dragged out: { date, a, b } in minutes
+  const dragged = useRef(false);
   useEffect(() => {
     setShowTasks(readPref('me.cal.tasks', '0') === '1');
     setView(isMobile() ? 'day' : readPref('me.cal.view', 'week'));
@@ -59,7 +66,7 @@ export default function CalendarPage() {
   // D = day, W = week, M = month, T = jump to today, ←/→ = previous/next.
   useEffect(() => {
     const onKey = (e) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || sel || creating || document.body.classList.contains('sheet-open')) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || sel || creating || editing || document.body.classList.contains('sheet-open')) return;
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
       const k = e.key.toLowerCase();
       if (k === 'd') changeView('day');
@@ -104,6 +111,33 @@ export default function CalendarPage() {
   const toggleTasks = () => { setShowTasks((v) => { writePref('me.cal.tasks', v ? '0' : '1'); return !v; }); };
   const tasksOn = (d) => (showTasks ? tasks.filter((t) => t.due_date === d && !t.parent_id).sort((a, b) => (a.due_time || '99').localeCompare(b.due_time || '99') || (a.day_order || 0) - (b.day_order || 0)) : []);
   const openDay = (d) => { setCursor(d); changeView('day'); };
+  const canEdit = (e) => !!(cals.data || []).find((cal) => cal.id === e.calendarId)?.writable;
+
+  // Click an empty slot for a one-hour event there; drag with the mouse to set its length.
+  const minuteAt = (col, y) => Math.max(0, Math.min(1440, ((y - col.getBoundingClientRect().top) / HOUR) * 60));
+  const slotClick = (e, d) => {
+    if (e.target !== e.currentTarget || dragged.current) return;
+    setCreating({ date: d, startMin: Math.min(1380, Math.floor(minuteAt(e.currentTarget, e.clientY) / 30) * 30), mins: 60 });
+  };
+  const slotDown = (e, d) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0 || e.target !== e.currentTarget) return;
+    const col = e.currentTarget, y0 = e.clientY, snap = (y) => Math.round(minuteAt(col, y) / 15) * 15, from = snap(y0);
+    let range = null;
+    const move = (m) => {
+      if (!range && Math.abs(m.clientY - y0) < 6) return;
+      const to = snap(m.clientY);
+      range = { date: d, a: Math.min(from, to), b: Math.max(from, to) };
+      setDraft(range);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
+      setDraft(null);
+      if (!range) return;
+      dragged.current = true; setTimeout(() => { dragged.current = false; }, 0);
+      setCreating({ date: d, startMin: Math.min(range.a, 1425), mins: Math.max(15, range.b - range.a) });
+    };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+  };
 
   const c = parse(cursor);
   const phone = mounted && isMobile();
@@ -116,7 +150,7 @@ export default function CalendarPage() {
     <>
       <div className="page-head cal-head">
         <div className="cal-title">
-          <h1>{title}</h1>
+          <h1 className="cal-jump" title="Go to a date">{title}{mounted && <input type="date" aria-label="Go to date" value={cursor} onChange={(e) => { if (e.target.value) setCursor(e.target.value); }} onClick={(e) => { try { e.currentTarget.showPicker?.(); } catch {} }} />}</h1>
           <div className="cal-step">
             <button className="icon-btn" title="Previous (←)" aria-label="Previous" onClick={() => step(-1)}><IconChevL /></button>
             <button className="btn ghost sm" title="Today (T)" onClick={() => setCursor(todayStr())}>Today</button>
@@ -137,7 +171,7 @@ export default function CalendarPage() {
             ))}
             {!cals.data && <div className="pop-item muted">Loading…</div>}
           </Popover>
-          <button className="btn primary" aria-label="New event" onClick={() => setCreating({ date: view === 'day' ? cursor : today, hour: Math.min(22, now.getHours() + 1) })}><IconPlus /><span className="hide-phone">New event</span></button>
+          <button className="btn primary" aria-label="New event" onClick={() => setCreating({ date: view === 'day' ? cursor : today, startMin: Math.min(22, now.getHours() + 1) * 60, mins: 60 })}><IconPlus /><span className="hide-phone">New event</span></button>
         </div>
       </div>
       {ev.error && <div style={{ marginBottom: 12 }}><LoadError error={ev.error} onRetry={ev.reload} /></div>}
@@ -152,7 +186,7 @@ export default function CalendarPage() {
               const max = phone ? 4 : 3;
               const out = d.slice(0, 7) !== cursor.slice(0, 7);
               return (
-                <div key={d} className={`mcell ${out ? 'out' : ''} ${d === today ? 'today' : ''}`} onClick={() => { if (isMobile()) openDay(d); }} onDoubleClick={() => { if (!isMobile()) setCreating({ date: d, hour: 9 }); }}>
+                <div key={d} className={`mcell ${out ? 'out' : ''} ${d === today ? 'today' : ''}`} onClick={() => { if (isMobile()) openDay(d); }} onDoubleClick={() => { if (!isMobile()) setCreating({ date: d, startMin: 540, mins: 60 }); }}>
                   <button className="mnum" aria-label={parse(d).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })} onClick={(e) => { e.stopPropagation(); openDay(d); }}>{parse(d).getDate()}</button>
                   {items.slice(0, max).map(({ e, all }) => (
                     <button key={e.id + d} className={`mev ${all ? 'all' : ''}`} style={{ '--c': e.color }} onClick={() => setSel(e)} title={e.title}>
@@ -194,7 +228,8 @@ export default function CalendarPage() {
             <div className="hours" aria-hidden="true">{Array.from({ length: 24 }, (_, h) => <div key={h}>{h === 0 ? '' : humanTime(`${h}:00`)}</div>)}</div>
             {days.map((d) => (
               <div key={d} className={`day-col ${d === today ? 'today' : ''}`} style={{ height: HOUR * 24 }}
-                onDoubleClick={(e) => { if (e.target !== e.currentTarget) return; const r = e.currentTarget.getBoundingClientRect(); setCreating({ date: d, hour: Math.max(0, Math.min(23, Math.floor((e.clientY - r.top) / HOUR))) }); }}>
+                onClick={(e) => slotClick(e, d)} onPointerDown={(e) => slotDown(e, d)}>
+                {draft?.date === d && <div className="ev-draft" style={{ top: (draft.a / 60) * HOUR, height: Math.max(12, ((draft.b - draft.a) / 60) * HOUR) }}>{humanTime(hm(draft.a))} – {humanTime(hm(draft.b))}</div>}
                 {mounted && d === today && <div className="now-line" style={{ top: ((now - parse(d)) / 3600000) * HOUR }} />}
                 {layout[d].timed.map((e) => (
                   <button key={e.id + d} className={`ev-block ${e.declined ? 'declined' : ''} ${e.b < now ? 'past' : ''}`} onClick={() => setSel(e)}
@@ -207,9 +242,9 @@ export default function CalendarPage() {
           </div>
         </div>
       )}
-      <p className="kbd-hint"><span className="kbd">D</span> day · <span className="kbd">W</span> week · <span className="kbd">M</span> month · <span className="kbd">T</span> today · <span className="kbd">←</span> <span className="kbd">→</span> move · double-click an empty slot to add an event</p>
-      {sel && <EventSheet e={sel} onClose={() => setSel(null)} onDeleted={() => { setSel(null); ev.reload(); }} />}
-      {creating && <NewEvent init={creating} calendars={(cals.data || []).filter((cal) => cal.writable)} onClose={() => setCreating(null)} onCreated={() => { setCreating(null); ev.reload(); }} />}
+      <p className="kbd-hint"><span className="kbd">D</span> day · <span className="kbd">W</span> week · <span className="kbd">M</span> month · <span className="kbd">T</span> today · <span className="kbd">←</span> <span className="kbd">→</span> move · click or drag an empty slot to add an event</p>
+      {sel && !editing && <EventSheet e={sel} canEdit={canEdit(sel)} onEdit={() => setEditing(sel)} onClose={() => setSel(null)} onDeleted={() => { setSel(null); ev.reload(); }} />}
+      {(creating || editing) && <EventForm init={creating} event={editing} calendars={(cals.data || []).filter((cal) => cal.writable)} onClose={() => { setCreating(null); setEditing(null); }} onSaved={() => { setCreating(null); setEditing(null); setSel(null); ev.reload(); }} />}
     </>
   );
 }
@@ -238,7 +273,7 @@ function lanes(list) {
   if (cluster.length) flush();
 }
 
-function EventSheet({ e, onClose, onDeleted }) {
+function EventSheet({ e, canEdit, onEdit, onClose, onDeleted }) {
   const { attempt, showToast } = useApp();
   const { confirm } = useDialog();
   const del = async () => {
@@ -259,49 +294,56 @@ function EventSheet({ e, onClose, onDeleted }) {
         {e.meet && <a className="btn primary" href={e.meet} target="_blank" rel="noreferrer">Join call</a>}
         {e.link && <a className="btn" href={e.link} target="_blank" rel="noreferrer"><IconExt /> Open in Google</a>}
         <span className="grow" />
-        {e.canDelete !== false && <button className="btn ghost danger" onClick={del}><IconTrash /> Delete</button>}
+        {canEdit && <button className="btn" onClick={onEdit}>Edit</button>}
+        {canEdit && <button className="btn ghost danger" onClick={del}><IconTrash /> Delete</button>}
       </div>
     </Sheet>
   );
 }
 
-function NewEvent({ init, calendars, onClose, onCreated }) {
+// One form for a new event and for changing an existing one.
+function EventForm({ init, event, calendars, onClose, onSaved }) {
   const { showToast } = useApp();
-  const pad = (n) => String(n).padStart(2, '0');
-  const [f, setF] = useState({ title: '', date: init.date, start: `${pad(init.hour)}:00`, mins: 60, allDay: false, location: '', calendarId: calendars.find((c) => c.primary)?.id || 'primary' });
+  const [f, setF] = useState(() => {
+    if (event?.allDay) return { title: event.title, date: event.start, start: '09:00', mins: 60, days: Math.max(1, diffDays(event.end, event.start)), allDay: true, location: event.location || '', calendarId: event.calendarId };
+    if (event) {
+      const s = new Date(event.start);
+      return { title: event.title, date: fmt(s), start: hm(s.getHours() * 60 + s.getMinutes()), mins: Math.max(5, Math.round((new Date(event.end) - s) / 60000)), days: 1, allDay: false, location: event.location || '', calendarId: event.calendarId };
+    }
+    return { title: '', date: init.date, start: hm(init.startMin), mins: init.mins || 60, days: 1, allDay: false, location: '', calendarId: calendars.find((c) => c.primary)?.id || 'primary' };
+  });
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
+  const setEnd = (v) => { let d = toMin(v) - toMin(f.start); if (d <= 0) d += 1440; setF({ ...f, mins: d }); };
   const submit = async (e) => {
     e.preventDefault();
-    if (!f.title.trim() || !f.date || busy) return;
+    const title = f.title.trim();
+    if (!title || !f.date || busy) return;
     setBusy(true); setErr(null);
     try {
       const s = new Date(`${f.date}T${f.start || '09:00'}`);
       const en = new Date(s.getTime() + f.mins * 60000);
       const iso = (d) => `${fmt(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
-      await api('/api/calendar/events', { method: 'POST', body: f.allDay
-        ? { title: f.title.trim(), allDay: true, start: f.date, end: addDays(f.date, 1), location: f.location, calendarId: f.calendarId }
-        : { title: f.title.trim(), start: iso(s), end: iso(en), location: f.location, calendarId: f.calendarId } });
-      showToast(`Added “${f.title.trim()}”`);
-      onCreated();
+      const body = f.allDay
+        ? { title, allDay: true, start: f.date, end: addDays(f.date, f.days), location: f.location, calendarId: f.calendarId }
+        : { title, start: iso(s), end: iso(en), location: f.location, calendarId: f.calendarId };
+      await api('/api/calendar/events', event ? { method: 'PATCH', body: { ...body, id: event.id } } : { method: 'POST', body });
+      showToast(event ? 'Event updated' : `Added “${title}”`);
+      onSaved();
     } catch (x) { setErr(x.message); setBusy(false); }
   };
   return (
-    <Sheet title="New event" onClose={onClose}>
+    <Sheet title={event ? 'Edit event' : 'New event'} onClose={onClose}>
       <form onSubmit={submit} style={{ display: 'contents' }}>
         <input className="input" data-autofocus required placeholder="Title" aria-label="Title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} autoComplete="off" />
         <div className="when-row">
           <input className="input" type="date" aria-label="Date" required value={f.date} onChange={(e) => setF({ ...f, date: e.target.value })} />
           {!f.allDay && <input className="input" type="time" aria-label="Start time" value={f.start} onChange={(e) => setF({ ...f, start: e.target.value })} />}
-          {!f.allDay && (
-            <select className="input auto" aria-label="Length" value={f.mins} onChange={(e) => setF({ ...f, mins: Number(e.target.value) })}>
-              {[15, 30, 45, 60, 90, 120, 180].map((m) => <option key={m} value={m}>{m < 60 ? `${m} min` : `${m / 60} hr`}</option>)}
-            </select>
-          )}
+          {!f.allDay && <input className="input" type="time" aria-label="End time" value={hm(toMin(f.start) + f.mins)} onChange={(e) => e.target.value && setEnd(e.target.value)} />}
         </div>
         <label className="check-row" style={{ padding: 0 }}><input type="checkbox" checked={f.allDay} onChange={(e) => setF({ ...f, allDay: e.target.checked })} /> All day</label>
         <input className="input" placeholder="Location (optional)" aria-label="Location" value={f.location} onChange={(e) => setF({ ...f, location: e.target.value })} />
-        {calendars.length > 1 && (
+        {!event && calendars.length > 1 && (
           <select className="input" aria-label="Calendar" value={f.calendarId} onChange={(e) => setF({ ...f, calendarId: e.target.value })}>
             {calendars.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
@@ -309,7 +351,7 @@ function NewEvent({ init, calendars, onClose, onCreated }) {
         {err && <div className="error-box" role="alert">{err}</div>}
         <div className="dialog-actions">
           <button type="button" className="btn" onClick={onClose}>Cancel</button>
-          <button className="btn primary" disabled={busy || !f.title.trim()}>{busy ? 'Adding…' : 'Add event'}</button>
+          <button className="btn primary" disabled={busy || !f.title.trim()}>{busy ? 'Saving…' : event ? 'Save' : 'Add event'}</button>
         </div>
       </form>
     </Sheet>

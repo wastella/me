@@ -276,6 +276,26 @@ test.describe('calendar', () => {
     await expect(form).toHaveCount(0);
   });
 
+  test('change an event, and click an empty slot to add one', async ({ page }) => {
+    await page.goto('/calendar');
+    await page.getByRole('button', { name: 'Dentist' }).first().click();
+    await page.getByRole('dialog', { name: 'Dentist' }).getByRole('button', { name: 'Edit' }).click();
+    const edit = page.getByRole('dialog', { name: 'Edit event' });
+    await expect(edit.getByRole('textbox', { name: 'Title' })).toHaveValue('Dentist');
+    await expect(edit.getByLabel('Start time')).toHaveValue('12:00');
+    await expect(edit.getByLabel('End time')).toHaveValue('13:00');
+    await edit.getByLabel('Start time').fill('14:00');
+    await expect(edit.getByLabel('End time')).toHaveValue('15:00');   // keeps its length
+    await edit.getByRole('button', { name: 'Save' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Event updated' })).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await page.locator('.day-col.today').click({ position: { x: 20, y: 52 * 9 + 10 } });   // 9am
+    const form = page.getByRole('dialog', { name: 'New event' });
+    await expect(form.getByLabel('Start time')).toHaveValue('09:00');
+    await expect(form.getByLabel('End time')).toHaveValue('10:00');
+  });
+
   test('keyboard: D, W, M switch views', async ({ page, phone }) => {
     test.skip(phone, 'keyboard shortcuts are for the computer');
     await page.goto('/calendar');

@@ -614,3 +614,21 @@ html.desktop .banner { margin-top: -42px; padding-top: 34px; }
 html.desktop .views, html.desktop .cat-rail { top: 42px; }
 html.desktop .scrim, html.desktop .toast, html.desktop .pop, html.desktop .pop-scrim { -webkit-app-region: no-drag; }
 html.desktop .sheet.drawer .sheet-head { padding-top: 38px; }
+
+/* ---------- 14. Calendar, Google Calendar style: solid events, click or drag to add ---------- */
+.cal-jump { position: relative; cursor: pointer; border-radius: 8px; padding: 2px 6px; margin: -2px -6px; transition: background var(--fast); }
+.cal-jump:hover { background: var(--panel-2); }
+.cal-jump input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; cursor: pointer; }
+.day-col { cursor: cell; }
+.day-col.today { background-color: color-mix(in srgb, var(--accent) 5%, transparent); }
+.ev-block { border-radius: 6px; background: color-mix(in srgb, var(--c) 86%, #000); color: #fff; box-shadow: 0 0 0 1px var(--panel); }
+.ev-block span { color: rgba(255, 255, 255, .82); }
+.ev-block.past { opacity: .6; }
+.allday .ev, .mev.all { background: color-mix(in srgb, var(--c) 86%, #000); color: #fff; box-shadow: none; }
+.mev.all:hover { background: var(--c); }
+.ev-draft { position: absolute; left: 2px; right: 4px; z-index: 3; pointer-events: none; border-radius: 6px; padding: 3px 7px; font-size: 11.5px; font-weight: 550; color: #fff; background: color-mix(in srgb, var(--accent) 80%, transparent); box-shadow: var(--shadow-pop); overflow: hidden; white-space: nowrap; }
+@media (max-width: 760px) {
+  .week:not(.is-day) .ev-block { box-shadow: 0 0 0 1px var(--panel); }
+  .mev.all { background: var(--c); }
+  .when-row > input[type="time"] { flex: 1; }
+}

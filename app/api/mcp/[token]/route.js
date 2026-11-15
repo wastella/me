@@ -8,7 +8,7 @@ import { db } from '@/lib/db';
 import { snapshot as taskSnapshot, createTask, updateTask, completeTask, deleteTask } from '@/lib/tasks';
 import { snapshot as trainingSnapshot, saveWorkout, togglePosture } from '@/lib/training';
 import { snapshot as notesSnapshot, createNote, updateNote, deleteNote, createCategory, categoryByName } from '@/lib/notes';
-import { listEvents, listCalendars, createEvent, deleteEvent, googleConnected } from '@/lib/google';
+import { listEvents, listCalendars, createEvent, updateEvent, deleteEvent, googleConnected } from '@/lib/google';
 import { todayStr, addDays } from '@/lib/dates';
 import { zonedISO, localTime, localDate } from '@/lib/tz';
 
@@ -149,6 +149,30 @@ const handler = createMcpHandler((server) => {
       const endT = end_time || (() => { const [h, m] = start_time.split(':').map(Number); const t = h * 60 + m + 60; return `${String(Math.floor(t / 60) % 24).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; })();
       await createEvent({ title, start: `${date}T${start_time}:00`, end: `${date}T${endT}:00`, location });
       return text(`Added "${title}" on ${date}, ${start_time}–${endT}.`);
+    } catch (e) { return fail(e.message); }
+  });
+
+  server.registerTool('update_event', {
+    title: 'Update event',
+    description: "Change an event on the user's Google Calendar, using id and calendar_id from get_calendar. Pass only what should change. To move or resize it, pass date (and start_time, with end_time or it lasts an hour); a date with no start_time makes it all-day. For a repeating event this changes only that occurrence.",
+    inputSchema: z.object({
+      id: z.string().min(1), calendar_id: z.string().min(1), title: z.string().min(1).optional(), location: z.string().optional(),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(), end_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+    }),
+  }, async ({ id, calendar_id, title, location, date, start_time, end_time }) => {
+    try {
+      const cal = (await listCalendars()).find((c) => c.id === calendar_id);
+      if (!cal) return fail('No calendar with that calendar_id. Get it from get_calendar.');
+      if (!cal.writable) return fail(`"${cal.name}" is a read-only calendar for this account, so its events can't be changed here.`);
+      if (start_time && !date) return fail('Pass date along with start_time.');
+      const patch = { calendarId: calendar_id, id, title, location };
+      if (date && !start_time) Object.assign(patch, { allDay: true, start: date, end: addDays(date, 1) });
+      else if (date) {
+        const endT = end_time || (() => { const [h, m] = start_time.split(':').map(Number); const t = h * 60 + m + 60; return `${String(Math.floor(t / 60) % 24).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; })();
+        Object.assign(patch, { start: `${date}T${start_time}:00`, end: `${date}T${endT}:00` });
+      }
+      await updateEvent(patch);
+      return text('Event updated.');
     } catch (e) { return fail(e.message); }
   });
 
