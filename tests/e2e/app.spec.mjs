@@ -249,6 +249,15 @@ test.describe('home', () => {
     await addTask(page, name);
     await expect(page.getByRole('region', { name: /^Today/ }).getByText(name)).toBeVisible();
   });
+
+  test('shows tonight’s dinner and the week from Mealboard', async ({ page }) => {
+    await page.goto('/');
+    const dinner = page.getByRole('region', { name: 'Dinner' });
+    await expect(dinner.locator('.meal-tonight')).toHaveText('Chicken tacos');
+    await expect(dinner.getByText('Tomorrow')).toBeVisible();
+    await expect(dinner.getByText('Spaghetti and meatballs')).toBeVisible();
+    await expect(dinner.getByText('Homemade pizza')).toBeVisible();
+  });
 });
 
 test.describe('calendar', () => {

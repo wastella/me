@@ -19,8 +19,9 @@ William's personal life dashboard: tasks, Google Calendar, notes and training. A
 - `lib/tasks.js`: tasks, quick-add (`lib/quickadd.js`, chrono-node), recurrence (`lib/dates.js`). There is no "overdue": unfinished past tasks roll to the top of today (`rollover`). Order within a day is `day_order`, changed by drag (pointer events in `components/AppProvider.js`, long-press on touch). Projects replace labels; the inbox project is called "Misc".
 - `lib/google.js`: OAuth plus Calendar (list, create, delete events). Gmail helpers still exist but the Mail UI was removed on purpose.
 - `lib/notes.js`: notes and note categories (`category_id` NULL = Unsorted). Typing only: voice dictation was tried and removed at the owner's request, so don't add it back.
+- `lib/meals.js` + `lib/ics.js`: dinners from Mealboard (the meal-planning app William's mom uses). Mealboard has no API, so it exports into an iCloud calendar that William shares as a public link (pasted into Settings → Meals, stored in kv `meals_feed`). Me reads that link (cached 10 min); it's read-only. Shown as the Dinner card on Home, and through the connector's `get_meals` tool.
 - `lib/training.js`: upper/lower lifting split on alternating days, plus a daily posture routine. A single daily P1 "Workout" task covers lifting.
-- `app/api/mcp/[token]/route.js`: the "Me" Claude connector (MCP). It exposes tools for tasks, calendar (including `delete_event`), notes and training. The URL contains the secret `MCP_TOKEN`. When you add a feature, add matching connector tools so Claude can use it from chat. Destructive tools tell Claude to confirm with the user first.
+- `app/api/mcp/[token]/route.js`: the "Me" Claude connector (MCP). It exposes tools for tasks, calendar (including `delete_event`), notes, meals (read-only) and training. The URL contains the secret `MCP_TOKEN`. When you add a feature, add matching connector tools so Claude can use it from chat. Destructive tools tell Claude to confirm with the user first.
 - `app/api/quick`: Siri Shortcuts endpoint (Bearer key derived from `SESSION_SECRET`). `{text}` adds a task; `{text, kind: "note"}` adds a note.
 - Auth: Google sign-in limited to `OWNER_EMAIL`, with an HMAC-signed `me_session` cookie (`lib/session.js`, `middleware.js`). Public paths are listed in the middleware.
 - Server "today" uses `ME_TZ` (America/New_York) via `todayStr()` and `lib/tz.js`.
@@ -29,7 +30,7 @@ William's personal life dashboard: tasks, Google Calendar, notes and training. A
 ## Workflow
 
 - Local: `npm run build && npm start` (or `npm run dev`) on http://localhost:3737. A local run uses `data/me.db`, not the real Turso data, so test there freely. The preview config is in `.claude/launch.json` (name `me`).
-- Tests: `npm test` runs the logic tests in `tests/*.test.mjs` (dates, quick-add, tasks, projects, notes, training, sign-in) against a throwaway database. `npm run test:e2e` builds the app and clicks through every screen at desktop and phone size with Playwright (`tests/e2e`; first time: `npx playwright install chromium`). Stop any local server on port 3737 first. Add or update tests with every change, and run both before deploying.
+- Tests: `npm test` runs the logic tests in `tests/*.test.mjs` (dates, quick-add, tasks, projects, notes, meals, training, sign-in) against a throwaway database. `npm run test:e2e` builds the app and clicks through every screen at desktop and phone size with Playwright (`tests/e2e`; first time: `npx playwright install chromium`). Stop any local server on port 3737 first. Add or update tests with every change, and run both before deploying.
 - `npm run seed` fills an empty local database with sample data.
 - Check UI changes in the browser at desktop width and at phone width (375px), with no horizontal overflow.
 - Deploy: `npx --yes vercel@65.12.1 deploy --prod --yes`.

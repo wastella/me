@@ -1,11 +1,12 @@
 // "Ask Me": an MCP server so Claude (claude.ai, the Claude apps, Claude Code)
-// can read and change your tasks, calendar, notes and training. The URL carries a
+// can read and change your tasks, calendar, notes, meals and training. The URL carries a
 // long secret (MCP_TOKEN); without it every request is refused.
 import { createMcpHandler } from 'mcp-handler';
 import { z } from 'zod';
 import { timingSafeEqual } from 'node:crypto';
 import { db } from '@/lib/db';
 import { snapshot as taskSnapshot, createTask, updateTask, completeTask, deleteTask } from '@/lib/tasks';
+import { meals as mealPlan } from '@/lib/meals';
 import { snapshot as trainingSnapshot, saveWorkout, togglePosture } from '@/lib/training';
 import { snapshot as notesSnapshot, createNote, updateNote, deleteNote, createCategory, categoryByName } from '@/lib/notes';
 import { listEvents, listCalendars, createEvent, updateEvent, deleteEvent, googleConnected } from '@/lib/google';
@@ -236,6 +237,17 @@ const handler = createMcpHandler((server) => {
     title: 'Delete note', description: 'Permanently delete a note. Confirm with the user (quote its first line) before deleting.',
     inputSchema: z.object({ id: z.string().min(1) }),
   }, async ({ id }) => { await deleteNote(id); return text('Deleted.'); });
+
+  server.registerTool('get_meals', {
+    title: 'Meals', description: "What's planned for dinner (from Mealboard, the family's meal-planning app, which the user's mom plans in). Read-only: meals are changed in Mealboard, not here. Use for questions like what's for dinner tonight or this week, or to build a grocery list from the plan.",
+    inputSchema: z.object({ start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('YYYY-MM-DD, default today'), days: z.number().int().min(1).max(60).default(7) }),
+  }, async ({ start, days }) => {
+    try {
+      const r = await mealPlan({ start, days });
+      if (!r.connected) return text('Meals are not connected yet. The user can connect Mealboard in Me → Settings → Meals.');
+      return text({ from: r.start, to: r.end, meals: r.meals });
+    } catch (e) { return fail(e.message); }
+  });
 
   server.registerTool('get_training', {
     title: 'Training', description: "The user's upper/lower lifting split (every other day, alternating) and daily posture routine: today's plan, each exercise with sets×reps and last weight, and recent sessions.",

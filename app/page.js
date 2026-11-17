@@ -8,7 +8,7 @@ import ConnectGoogle from '@/components/ConnectGoogle';
 import { Skeleton, LoadError, Empty, useMounted } from '@/components/ui';
 import { IconGear } from '@/components/Icons';
 import { useApi, clockTime } from '@/lib/client';
-import { todayStr, fmt } from '@/lib/dates';
+import { todayStr, fmt, humanDate, humanTime } from '@/lib/dates';
 
 const greeting = (h) => (h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening');
 
@@ -36,10 +36,13 @@ export default function Home() {
       </div>
 
       <div className="grid-dash">
-        <section className="card" aria-labelledby="h-sched">
-          <div className="card-head"><h2 id="h-sched">Schedule</h2><Link className="more" href="/calendar">Calendar</Link></div>
-          <div className="card-body">{mounted ? <Schedule now={now} today={today} /> : <Skeleton rows={3} />}</div>
-        </section>
+        <div className="stack">
+          <section className="card" aria-labelledby="h-sched">
+            <div className="card-head"><h2 id="h-sched">Schedule</h2><Link className="more" href="/calendar">Calendar</Link></div>
+            <div className="card-body">{mounted ? <Schedule now={now} today={today} /> : <Skeleton rows={3} />}</div>
+          </section>
+          {status?.meals?.connected && <Meals today={today} />}
+        </div>
 
         <section className="card" aria-labelledby="h-tasks">
           <div className="card-head"><h2 id="h-tasks">Today{due.length ? <span className="count">{due.length}</span> : null}</h2><Link className="more" href="/tasks?view=today">All tasks</Link></div>
@@ -97,5 +100,36 @@ function Schedule({ now, today }) {
         })}
       </ul>
     </>
+  );
+}
+
+// Dinners from Mealboard (via its shared calendar): tonight, then the week.
+function Meals({ today }) {
+  const q = useApi(`/api/meals?start=${today}&days=7`, { refreshMs: 15 * 60_000 });
+  const list = q.data?.meals || [];
+  const tonight = list.filter((m) => m.date === today);
+  const later = list.filter((m) => m.date > today);
+  const byDay = later.reduce((acc, m) => { (acc[m.date] ||= []).push(m.meal); return acc; }, {});
+  return (
+    <section className="card" aria-labelledby="h-meals">
+      <div className="card-head"><h2 id="h-meals">Dinner</h2></div>
+      <div className="card-body">
+        {q.error && !q.data ? <LoadError error={q.error} onRetry={q.reload} />
+          : !q.data ? <Skeleton rows={2} />
+          : !list.length ? <Empty>No meals planned this week.</Empty>
+          : (
+            <>
+              {tonight.length
+                ? tonight.map((m, i) => <div key={i} className="meal-tonight">{m.meal}{m.time ? <span className="muted small"> · {humanTime(m.time)}</span> : null}</div>)
+                : <div className="muted">Nothing planned tonight.</div>}
+              {later.length > 0 && (
+                <ul className="meal-week">
+                  {Object.entries(byDay).map(([d, ms]) => <li key={d}><span className="d">{humanDate(d, today)}</span><span>{ms.join(', ')}</span></li>)}
+                </ul>
+              )}
+            </>
+          )}
+      </div>
+    </section>
   );
 }

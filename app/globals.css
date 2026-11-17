@@ -632,3 +632,11 @@ html.desktop .sheet.drawer .sheet-head { padding-top: 38px; }
   .mev.all { background: var(--c); }
   .when-row > input[type="time"] { flex: 1; }
 }
+
+/* Home: dinner from Mealboard */
+.meal-tonight { font-size: 15px; font-weight: 550; overflow-wrap: anywhere; }
+.meal-tonight + .meal-tonight { margin-top: 4px; }
+.meal-week { list-style: none; margin: 10px 0 0; padding: 8px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 5px; font-size: 13px; }
+.meal-week li { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 10px; }
+.meal-week .d { color: var(--muted); white-space: nowrap; }
+.meal-week li span:last-child { overflow-wrap: anywhere; }

@@ -78,6 +78,8 @@ function Settings() {
           </div>
         </section>
 
+        <Meals meals={status?.meals} onChange={reloadStatus} />
+
         {status?.push?.enabled && <Notifications publicKey={status.push.publicKey} />}
 
         {status?.shortcut && (
@@ -104,7 +106,7 @@ function Settings() {
           <section className="card">
             <div className="card-head"><h2>Claude connector</h2></div>
             <div className="card-body">
-              <p>Lets Claude (on your Mac, iPhone, or in Claude Code) read and change your tasks, calendar, notes and training, using your Claude plan. In claude.ai open <b>Settings → Connectors → Add custom connector</b>, name it <b>Me</b>, and paste this URL. Keep it private: anyone with it can use your Me.</p>
+              <p>Lets Claude (on your Mac, iPhone, or in Claude Code) read and change your tasks, calendar, notes and training (and see your meals), using your Claude plan. In claude.ai open <b>Settings → Connectors → Add custom connector</b>, name it <b>Me</b>, and paste this URL. Keep it private: anyone with it can use your Me.</p>
               <CopyField value={status.mcpUrl} />
             </div>
           </section>
@@ -131,6 +133,51 @@ function Settings() {
         </section>
       </div>
     </>
+  );
+}
+
+function Meals({ meals, onChange }) {
+  const { attempt, showToast } = useApp();
+  const { confirm } = useDialog();
+  const [url, setUrl] = useState('');
+  const [err, setErr] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const save = async (e) => {
+    e.preventDefault(); setErr(null); setBusy(true);
+    try { const r = await api('/api/meals', { method: 'PUT', body: { url } }); showToast(`Connected “${r.name}”`); setUrl(''); onChange(); }
+    catch (x) { setErr(x.message); }
+    finally { setBusy(false); }
+  };
+  const remove = async () => {
+    if (!(await confirm({ title: 'Disconnect meals?', body: 'Meals disappear from Me. Nothing in Mealboard or your calendar changes.', confirmLabel: 'Disconnect', danger: true }))) return;
+    if (await attempt(() => api('/api/meals', { method: 'DELETE' }))) onChange();
+  };
+  return (
+    <section className="card">
+      <div className="card-head"><h2><i className={`dot ${meals?.connected ? 'on' : ''}`} />Meals (Mealboard)</h2></div>
+      <div className="card-body">
+        {meals?.connected ? (
+          <>
+            <p>Reading dinners from your <b>{meals.name}</b> calendar. They show on Home, and Claude can see them through the connector. Plan meals in Mealboard as usual; Me checks for changes every 10 minutes.</p>
+            <div><button className="btn ghost danger" onClick={remove}>Disconnect</button></div>
+          </>
+        ) : (
+          <>
+            <p>Mealboard exports its meal plan into your iPhone’s Calendar. Share that calendar as a link and Me shows what’s for dinner. One-time setup on your iPhone:</p>
+            <ol className="steps">
+              <li>In <b>Mealboard</b>, export meals into their own calendar (for example one called <b>Meals</b>), not your main calendar: the next step makes that calendar readable by anyone with the link.</li>
+              <li>Open the <b>Calendar</b> app → <b>Calendars</b> → tap <b>ⓘ</b> next to that calendar → turn on <b>Public Calendar</b> → <b>Share Link…</b> → <b>Copy</b>.</li>
+              <li>Paste the link below and click <b>Connect</b>.</li>
+            </ol>
+            <form onSubmit={save} className="stack" style={{ gap: 8 }}>
+              <input className="input" aria-label="Meals calendar link" placeholder="webcal://p…-caldav.icloud.com/published/…" value={url} onChange={(e) => setUrl(e.target.value)} autoComplete="off" spellCheck={false} />
+              {err && <div className="error-box" role="alert">{err}</div>}
+              <div className="row"><button className="btn primary" disabled={!url.trim() || busy}>{busy ? 'Checking…' : 'Connect'}</button></div>
+            </form>
+          </>
+        )}
+      </div>
+    </section>
   );
 }
 

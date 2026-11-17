@@ -14,7 +14,8 @@ export const EVENTS = [
   ev('e3', 'Club meeting', at(1, 15), at(1, 15, 45)),
   { ...ev('e4', 'Essay due', day(0), day(1)), allDay: true },
 ];
-const STATUS = { name: 'Tester', desktop: false, hosted: false, storage: 'local', mcpUrl: null, shortcut: null, push: { publicKey: null, enabled: false, devices: 0 }, google: { configured: true, connected: true, email: 'tester@example.com', redirectUri: '' } };
+const STATUS = { name: 'Tester', desktop: false, hosted: false, storage: 'local', mcpUrl: null, shortcut: null, push: { publicKey: null, enabled: false, devices: 0 }, google: { configured: true, connected: true, email: 'tester@example.com', redirectUri: '' }, meals: { connected: true, name: 'Meals' } };
+export const MEALS = [{ date: day(0), time: null, meal: 'Chicken tacos' }, { date: day(1), time: '18:00', meal: 'Spaghetti and meatballs' }, { date: day(3), time: null, meal: 'Homemade pizza' }];
 
 export const test = base.extend({
   page: async ({ page }, use, testInfo) => {
@@ -24,6 +25,7 @@ export const test = base.extend({
     await page.route('**/api/status', (r) => r.fulfill({ json: STATUS }));
     await page.route('**/api/calendar/calendars', (r) => r.fulfill({ json: [{ id: 'primary', name: 'William', color: '#4f86e8', visible: true, writable: true, primary: true }] }));
     await page.route('**/api/calendar/events**', (r) => (r.request().method() === 'GET' ? r.fulfill({ json: EVENTS }) : r.fulfill({ json: { ok: true } })));
+    await page.route('**/api/meals**', (r) => r.fulfill({ json: { connected: true, name: 'Meals', meals: MEALS } }));
     page.expectErrors = () => { page.errorsExpected = true; };
     await use(page);
     if (!page.errorsExpected) expect(problems, 'the page should log no errors').toEqual([]);
