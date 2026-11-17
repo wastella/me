@@ -158,7 +158,7 @@ function Meals({ meals, onChange }) {
       <div className="card-body">
         {meals?.connected ? (
           <>
-            <p>Reading dinners from your <b>{meals.name}</b> calendar. They show on Home, and Claude can see them through the connector. Plan meals in Mealboard as usual; Me checks for changes every 10 minutes.</p>
+            <p>Reading dinners from your <b>{meals.name}</b> calendar. Each night’s meal shows on your Supper events in the Calendar tab, and Claude can see them through the connector. Plan meals in Mealboard as usual; Me checks for changes every 10 minutes.</p>
             <div><button className="btn ghost danger" onClick={remove}>Disconnect</button></div>
           </>
         ) : (

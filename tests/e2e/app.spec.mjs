@@ -246,26 +246,22 @@ test.describe('home', () => {
     const schedule = page.getByRole('region', { name: 'Schedule' });
     await expect(schedule.getByText('Essay due')).toBeVisible();
     await expect(schedule.getByText('Club meeting')).toHaveCount(0);   // that one is tomorrow
+    await expect(page.getByText('Chicken tacos')).toHaveCount(0);       // meals live on the Calendar tab only
     await addTask(page, name);
     await expect(page.getByRole('region', { name: /^Today/ }).getByText(name)).toBeVisible();
   });
 
-  test('shows tonight’s dinner and the week from Mealboard', async ({ page }) => {
-    await page.goto('/');
-    const dinner = page.getByRole('region', { name: 'Dinner' });
-    await expect(dinner.locator('.meal-tonight')).toHaveText('Chicken tacos');
-    await expect(dinner.getByText('Tomorrow')).toBeVisible();
-    await expect(dinner.getByText('Spaghetti and meatballs')).toBeVisible();
-    await expect(dinner.getByText('Homemade pizza')).toBeVisible();
-  });
-
-  test('the Supper event shows what’s cooking', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByRole('region', { name: 'Schedule' }).locator('.meal')).toHaveText('Chicken tacos');
-  });
 });
 
 test.describe('calendar', () => {
+  test('Supper events show that night’s meal', async ({ page }) => {
+    await page.goto('/calendar');
+    const supper = page.getByRole('button', { name: /Supper/ }).first();
+    await expect(supper).toContainText('Chicken tacos');
+    await supper.click();
+    await expect(page.getByRole('dialog', { name: 'Supper' }).getByText('Chicken tacos')).toBeVisible();
+  });
+
   test('views, event details and adding an event', async ({ page, phone }) => {
     await page.goto('/calendar');
     const views = page.getByRole('group', { name: 'Calendar view' });
