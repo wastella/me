@@ -92,6 +92,7 @@ function Schedule({ now, today }) {
                 <span className="bar" />
                 <div>
                   <div className="title">{e.title}</div>
+                  {e.meal && <div className="meal">{e.meal}</div>}
                   {(e.location || !e.allDay) && <div className="loc">{e.allDay ? '' : `until ${clockTime(e.end)}`}{e.location ? `${e.allDay ? '' : ' · '}${e.location}` : ''}</div>}
                 </div>
               </a>

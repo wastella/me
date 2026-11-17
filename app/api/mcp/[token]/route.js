@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { timingSafeEqual } from 'node:crypto';
 import { db } from '@/lib/db';
 import { snapshot as taskSnapshot, createTask, updateTask, completeTask, deleteTask } from '@/lib/tasks';
-import { meals as mealPlan } from '@/lib/meals';
+import { meals as mealPlan, withMeals } from '@/lib/meals';
 import { snapshot as trainingSnapshot, saveWorkout, togglePosture } from '@/lib/training';
 import { snapshot as notesSnapshot, createNote, updateNote, deleteNote, createCategory, categoryByName } from '@/lib/notes';
 import { listEvents, listCalendars, createEvent, updateEvent, deleteEvent, googleConnected } from '@/lib/google';
@@ -31,11 +31,12 @@ function shapeTask(t, byId) {
 }
 async function events(start, end) {
   if (!(await googleConnected())) return [];
-  const [list, cals] = await Promise.all([listEvents(zonedISO(start), zonedISO(addDays(end, 1))), listCalendars()]);
+  const [raw, cals] = await Promise.all([listEvents(zonedISO(start), zonedISO(addDays(end, 1))), listCalendars()]);
+  const list = await withMeals(raw);
   const writable = new Set(cals.filter((c) => c.writable).map((c) => c.id));
   return list.filter((e) => !e.declined).map((e) => ({
     id: e.id, calendar_id: e.calendarId, can_delete: writable.has(e.calendarId) || undefined,
-    title: e.title, calendar: e.calendar, location: e.location || undefined,
+    title: e.title, meal: e.meal, calendar: e.calendar, location: e.location || undefined,
     date: e.allDay ? e.start : localDate(e.start),
     time: e.allDay ? 'all day' : `${localTime(e.start)} – ${localTime(e.end)}`,
   })).filter((e) => e.date >= start && e.date <= end);

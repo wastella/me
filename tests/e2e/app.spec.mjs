@@ -258,6 +258,11 @@ test.describe('home', () => {
     await expect(dinner.getByText('Spaghetti and meatballs')).toBeVisible();
     await expect(dinner.getByText('Homemade pizza')).toBeVisible();
   });
+
+  test('the Supper event shows what’s cooking', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('region', { name: 'Schedule' }).locator('.meal')).toHaveText('Chicken tacos');
+  });
 });
 
 test.describe('calendar', () => {

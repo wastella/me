@@ -10,7 +10,7 @@ const ev = (id, title, start, end, extra = {}) => ({ id, calendarId: 'primary', 
 
 export const EVENTS = [
   ev('e1', 'Dentist', at(0, 12), at(0, 13), { location: '123 Main St' }),
-  ev('e2', 'Supper', at(0, 18), at(0, 18, 45)),
+  ev('e2', 'Supper', at(0, 18), at(0, 18, 45), { meal: 'Chicken tacos' }),
   ev('e3', 'Club meeting', at(1, 15), at(1, 15, 45)),
   { ...ev('e4', 'Essay due', day(0), day(1)), allDay: true },
 ];

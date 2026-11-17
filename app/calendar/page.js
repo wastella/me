@@ -189,8 +189,8 @@ export default function CalendarPage() {
                 <div key={d} className={`mcell ${out ? 'out' : ''} ${d === today ? 'today' : ''}`} onClick={() => { if (isMobile()) openDay(d); }} onDoubleClick={() => { if (!isMobile()) setCreating({ date: d, startMin: 540, mins: 60 }); }}>
                   <button className="mnum" aria-label={parse(d).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })} onClick={(e) => { e.stopPropagation(); openDay(d); }}>{parse(d).getDate()}</button>
                   {items.slice(0, max).map(({ e, all }) => (
-                    <button key={e.id + d} className={`mev ${all ? 'all' : ''}`} style={{ '--c': e.color }} onClick={() => setSel(e)} title={e.title}>
-                      {!all && <i />}{!all && <span className="t">{clockTime(e.start)}</span>}<span className="lbl">{e.title}</span>
+                    <button key={e.id + d} className={`mev ${all ? 'all' : ''}`} style={{ '--c': e.color }} onClick={() => setSel(e)} title={e.meal ? `${e.title} · ${e.meal}` : e.title}>
+                      {!all && <i />}{!all && <span className="t">{clockTime(e.start)}</span>}<span className="lbl">{e.title}{e.meal ? ` · ${e.meal}` : ''}</span>
                     </button>
                   ))}
                   {dayTasks.slice(0, Math.max(0, max - items.length)).map((t) => <button key={t.id} className="mev task" onClick={() => openTask(t)}><i /><span className="lbl">{t.content}</span></button>)}
@@ -234,7 +234,7 @@ export default function CalendarPage() {
                 {layout[d].timed.map((e) => (
                   <button key={e.id + d} className={`ev-block ${e.declined ? 'declined' : ''} ${e.b < now ? 'past' : ''}`} onClick={() => setSel(e)}
                     style={{ '--c': e.color, top: e.top, height: e.height, left: `calc(${(e.lane / e.lanes) * 100}% + 2px)`, width: `calc(${(100 * e.span) / e.lanes}% - 4px)` }}>
-                    <b>{e.title}</b>{e.height > 34 && <span>{clockTime(e.start)} – {clockTime(e.end)}{view === 'day' && e.location ? ` · ${e.location}` : ''}</span>}
+                    <b>{e.title}</b>{e.meal && <span className="ev-meal">{e.meal}</span>}{e.height > (e.meal ? 52 : 34) && <span>{clockTime(e.start)} – {clockTime(e.end)}{view === 'day' && e.location ? ` · ${e.location}` : ''}</span>}
                   </button>
                 ))}
               </div>
@@ -287,6 +287,7 @@ function EventSheet({ e, canEdit, onEdit, onClose, onDeleted }) {
   return (
     <Sheet title={e.title} onClose={onClose}>
       <div className="row nowrap ev-when"><IconClock style={{ width: 15, height: 15, flex: 'none' }} /><span>{when}</span></div>
+      {e.meal && <div className="row nowrap ev-when"><span className="muted">Dinner</span><span>{e.meal}</span></div>}
       {e.location && <div className="row nowrap ev-when"><IconMap style={{ width: 15, height: 15, flex: 'none' }} /><span>{e.location}</span></div>}
       <div className="row">{(e.calendars || [e.calendar]).filter(Boolean).map((c) => <span key={c} className="chip"><i style={{ background: e.color, borderRadius: '50%' }} />{c}</span>)}</div>
       {e.description && <div className="ev-desc">{e.description.replace(/<[^>]+>/g, ' ').trim()}</div>}

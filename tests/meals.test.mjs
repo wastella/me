@@ -58,3 +58,29 @@ test('connect checks the link is a calendar', async () => {
     assert.equal((await M.meals()).connected, false);
   } finally { globalThis.fetch = real; }
 });
+
+test('Supper and dinner events get that night’s meal', async () => {
+  const real = globalThis.fetch;
+  try {
+    globalThis.fetch = async () => new Response(SAMPLE, { status: 200 });
+    const evs = () => [
+      { title: 'Supper', allDay: false, start: '2026-11-17T23:30:00Z' },             // 6:30pm Nov 17 in New York
+      { title: 'Shabbat dinner', allDay: false, start: '2026-11-19T00:00:00Z' },     // 7pm Nov 18 in New York
+      { title: 'Supper', allDay: false, start: '2026-11-25T23:30:00Z' },             // no meal planned
+      { title: 'Physics HW', allDay: false, start: '2026-11-17T20:00:00Z' },
+      { title: 'Supper', allDay: true, start: '2026-11-17' },
+    ];
+    assert.equal((await M.withMeals(evs()))[0].meal, undefined, 'nothing attached before meals are connected');
+    await M.connect('https://example.com/meals');
+    const out = await M.withMeals(evs());
+    assert.equal(out[0].meal, 'Chicken tacos');
+    assert.equal(out[1].meal, 'Spaghetti, meatballs');
+    assert.equal(out[2].meal, undefined);
+    assert.equal(out[3].meal, undefined);
+    assert.equal(out[4].meal, undefined, 'all-day events are left alone');
+    globalThis.__meMeals = null;
+    globalThis.fetch = async () => { throw new Error('offline'); };
+    assert.equal((await M.withMeals(evs()))[0].meal, undefined, 'a broken feed never breaks the calendar');
+    await M.disconnect();
+  } finally { globalThis.fetch = real; }
+});

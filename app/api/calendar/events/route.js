@@ -1,8 +1,9 @@
 import { handle, json, body } from '@/lib/http';
 import { listEvents, createEvent, updateEvent, deleteEvent } from '@/lib/google';
+import { withMeals } from '@/lib/meals';
 export const GET = handle(async (req) => {
   const u = new URL(req.url);
-  return json(await listEvents(u.searchParams.get('start'), u.searchParams.get('end')));
+  return json(await withMeals(await listEvents(u.searchParams.get('start'), u.searchParams.get('end'))));
 });
 export const POST = handle(async (req) => json(await createEvent(await body(req)), 201));
 export const PATCH = handle(async (req) => { await updateEvent(await body(req)); return json({ ok: true }); });

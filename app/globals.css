@@ -640,3 +640,6 @@ html.desktop .sheet.drawer .sheet-head { padding-top: 38px; }
 .meal-week li { display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 10px; }
 .meal-week .d { color: var(--muted); white-space: nowrap; }
 .meal-week li span:last-child { overflow-wrap: anywhere; }
+/* The night's meal on a Supper/Dinner event */
+.agenda .meal { font-size: 12.5px; color: var(--text); opacity: .8; overflow-wrap: anywhere; }
+.ev-block .ev-meal { color: inherit; font-weight: 500; }
