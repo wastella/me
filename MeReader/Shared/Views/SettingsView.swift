@@ -22,7 +22,7 @@ struct SettingsView: View {
                     if let book = app.mostRecentBook {
                         let n = app.preparedChapters[book.id] ?? 0
                         Text(n > 0 ? "\(n) chapter\(n == 1 ? "" : "s") of \(book.title) ready on this iPhone."
-                                   : "Nothing prepared on this iPhone yet. Open Narrate on your Mac; it prepares chapters in the background and they arrive here through iCloud.")
+                                   : "Nothing prepared on this iPhone yet. Open MeReader on your Mac; it prepares chapters in the background and they arrive here through iCloud.")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     #endif
@@ -75,13 +75,13 @@ struct SettingsView: View {
                     } header: {
                         Text("App install")
                     } footer: {
-                        Text("Free developer installs last 7 days. Your Mac reinstalls Narrate automatically every few days when the iPhone is on the same Wi‑Fi.")
+                        Text("Free developer installs last 7 days. Your Mac reinstalls MeReader automatically every few days when the iPhone is on the same Wi‑Fi.")
                     }
                 }
                 Section {
-                    Text("Narrate never starts on its own when you connect to the car. Press play on your phone, in Now Playing, or on the steering wheel, and it grabs your latest place from your other devices first.")
+                    Text("MeReader never starts on its own when you connect to the car. Press play on your phone, in Now Playing, or on the steering wheel, and it grabs your latest place from your other devices first.")
                         .font(.footnote)
-                    Text("Hands-free: “Hey Siri, continue listening in Narrate”.").font(.footnote).foregroundStyle(.secondary)
+                    Text("Hands-free: “Hey Siri, continue listening in MeReader”.").font(.footnote).foregroundStyle(.secondary)
                 } header: {
                     Text("In the car")
                 }
@@ -132,9 +132,9 @@ struct SettingsView: View {
 
     private var syncHelp: String {
         #if os(iOS)
-        "Uses the iCloud Drive › Narrate folder your Mac created. After connecting once, positions sync on their own whenever you pause, switch apps, or open Narrate, and books you add on one device appear on the other."
+        "Uses the iCloud Drive › Narrate folder your Mac created. After connecting once, positions sync on their own whenever you pause, switch apps, or open MeReader, and books you add on one device appear on the other."
         #else
-        "Your Mac uses iCloud Drive › Narrate automatically. Positions sync on their own whenever you pause, switch apps, or open Narrate, and books you add on one device appear on the other."
+        "Your Mac uses iCloud Drive › Narrate automatically. Positions sync on their own whenever you pause, switch apps, or open MeReader, and books you add on one device appear on the other."
         #endif
     }
 }

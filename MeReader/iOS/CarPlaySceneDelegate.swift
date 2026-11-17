@@ -1,14 +1,14 @@
 import CarPlay
 import UIKit
 
-/// The Narrate app on the CarPlay dashboard.
+/// The MeReader app on the CarPlay dashboard.
 ///
 /// Tap "Continue" and it pulls your latest place from your other devices, then plays it and
 /// shows Now Playing. The library below lets you switch books.
 ///
 /// Showing up on a real car's dashboard requires Apple's CarPlay audio entitlement (paid developer
 /// account + approval). Until then this runs in the simulator's CarPlay screen only; on the phone,
-/// CarPlay's built-in Now Playing + steering wheel controls still drive Narrate.
+/// CarPlay's built-in Now Playing + steering wheel controls still drive MeReader.
 final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate {
     private var interfaceController: CPInterfaceController?
     private var root: CPListTemplate?
@@ -27,7 +27,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
                     n.rate = speeds[(i + 1) % speeds.count]
                 },
             ])
-            let template = CPListTemplate(title: "Narrate", sections: sections(syncing: true))
+            let template = CPListTemplate(title: "MeReader", sections: sections(syncing: true))
             template.emptyViewTitleVariants = ["No books yet"]
             template.emptyViewSubtitleVariants = ["Add an EPUB on your iPhone or Mac."]
             root = template

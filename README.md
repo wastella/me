@@ -2,6 +2,12 @@
 
 Your personal dashboard: tasks, Google Calendar, Gmail and training, in sync between your Mac and iPhone.
 
+This repo is the home of the Me suite. The dashboard is at the top level; other apps live in their own folders:
+
+- **MeReader** (`MeReader/`): EPUB reader and audiobook app for iPhone and Mac. See `MeReader/README.md`.
+
+## The dashboard
+
 - **Web/phone:** https://me-omega-green.vercel.app. On iPhone, open it in Safari, then **Share → Add to Home Screen**.
 - **Mac:** the Me app in Applications is a native window onto the same site.
 - **Data:** your own Turso database (`me`). Only `OWNER_EMAIL` can sign in, with Google.

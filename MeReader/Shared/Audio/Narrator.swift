@@ -109,7 +109,7 @@ final class Narrator: NSObject, ObservableObject {
     var remotePlayHandler: (() -> Void)?
 
     /// When a car / headphones were just connected. Many cars send "play" automatically on
-    /// connect; we ignore those so Narrate only starts when you actually press play.
+    /// connect; we ignore those so MeReader only starts when you actually press play.
     private var outputConnectedAt: Date?
     private var isAutoPlayOnConnect: Bool {
         !isPlaying && (outputConnectedAt.map { Date().timeIntervalSince($0) < 4 } ?? false)

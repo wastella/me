@@ -1,4 +1,4 @@
-name: Narrate
+name: MeReader
 options:
   bundleIdPrefix: idk
   deploymentTarget:
@@ -28,7 +28,7 @@ settings:
     ENABLE_PREVIEWS: YES
     GENERATE_INFOPLIST_FILE: YES
 targets:
-  Narrate:
+  MeReader:
     type: application
     platform: iOS
     sources:
@@ -43,8 +43,8 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_FILE: iOS/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": iOS/Narrate-Simulator.entitlements
-  NarrateMac:
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": iOS/MeReader-Simulator.entitlements
+  MeReaderMac:
     type: application
     platform: macOS
     sources:
@@ -61,7 +61,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: idk.Narrate.mac
-        PRODUCT_NAME: Narrate
+        PRODUCT_NAME: MeReader
         INFOPLIST_FILE: macOS/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_HARDENED_RUNTIME: NO

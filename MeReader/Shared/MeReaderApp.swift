@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct NarrateApp: App {
+struct MeReaderApp: App {
     @StateObject private var app = AppModel.shared
     @Environment(\.scenePhase) private var phase
     #if os(macOS)

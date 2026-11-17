@@ -25,7 +25,7 @@ struct PauseListeningIntent: AudioPlaybackIntent {
     }
 }
 
-struct NarrateShortcuts: AppShortcutsProvider {
+struct MeReaderShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: ContinueListeningIntent(),
                     phrases: ["Continue listening in \(.applicationName)",

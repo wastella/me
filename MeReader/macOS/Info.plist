@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>Narrate</string>
+	<string>MeReader</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

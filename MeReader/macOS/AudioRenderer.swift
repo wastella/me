@@ -50,8 +50,8 @@ final class AudioRenderer: ObservableObject {
         for f in (try? fm.contentsOfDirectory(at: RenderedAudio.localCache, includingPropertiesForKeys: nil)) ?? []
         where f.lastPathComponent.hasPrefix("tmp-") { try? fm.removeItem(at: f) }
         // First launch from /Applications: open at login, so audio is prepared whenever the Mac is on.
-        if !UserDefaults.standard.bool(forKey: "loginItemOffered"), Bundle.main.bundlePath.hasPrefix("/Applications") {
-            UserDefaults.standard.set(true, forKey: "loginItemOffered")
+        if !UserDefaults.standard.bool(forKey: "loginItemOffered2"), Bundle.main.bundlePath.hasPrefix("/Applications") {
+            UserDefaults.standard.set(true, forKey: "loginItemOffered2")
             try? SMAppService.mainApp.register()
             openAtLogin = SMAppService.mainApp.status == .enabled
         }

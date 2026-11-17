@@ -31,15 +31,15 @@ enum AppExpiry {
             let ids = ["expiry-1d", "expiry-3h"]
             center.removePendingNotificationRequests(withIdentifiers: ids)
             let plan: [(String, TimeInterval, String)] = [
-                (ids[0], 86_400, "Narrate needs a refresh tomorrow"),
-                (ids[1], 3 * 3_600, "Narrate stops opening in 3 hours"),
+                (ids[0], 86_400, "MeReader needs a refresh tomorrow"),
+                (ids[1], 3 * 3_600, "MeReader stops opening in 3 hours"),
             ]
             for (id, before, title) in plan {
                 let fire = date.addingTimeInterval(-before)
                 guard fire > Date() else { continue }
                 let content = UNMutableNotificationContent()
                 content.title = title
-                content.body = "Open your Mac on the same Wi‑Fi (it reinstalls Narrate automatically), or run install-iphone.sh."
+                content.body = "Open your Mac on the same Wi‑Fi (it reinstalls MeReader automatically), or run install-iphone.sh."
                 let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: fire)
                 center.add(UNNotificationRequest(identifier: id, content: content,
                                                  trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)))

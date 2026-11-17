@@ -2,7 +2,15 @@
 
 William's personal life dashboard: tasks, Google Calendar, notes and training. A single owner uses it on a Mac (Electron app) and an iPhone (home-screen web app). Both load the same hosted site, so data syncs through one cloud database.
 
-## Stack
+## The Me suite
+
+This repo holds a suite of apps custom-built for William. Each app beyond the dashboard gets its own top-level folder with its own `CLAUDE.md` and `README.md`; read those before working in it.
+
+- **Me** (the repo root): the web dashboard described below.
+- **MeReader** (`MeReader/`): native SwiftUI EPUB reader and audiobook app for iPhone and Mac (formerly Narrate). It is not part of the website: it's listed in `.vercelignore`, has no server, and is built with Xcode (`MeReader/CLAUDE.md`).
+
+New apps: add a folder `Me<Name>/`, list it here, and add it to `.vercelignore` unless it is part of the website. Everything below is about the dashboard.
+
 
 - Next.js 15 App Router, plain JavaScript (no TypeScript), React 19, custom CSS in `app/globals.css` (minimal dark theme, light variant via `prefers-color-scheme`). No Tailwind or UI library.
 - Data: libSQL through `@libsql/client` (`lib/db.js`). Production uses Turso (`TURSO_DATABASE_URL`); without it, a local file at `data/me.db`. All DB access is async: `const q = await db(); await q.all/get/run(sql, ...args)`, `tx(fn)` for transactions, `kvGet`/`kvSet` for small settings. Schema is `CREATE TABLE IF NOT EXISTS` in `SCHEMA`; column additions go in `init()` as guarded `ALTER TABLE`s.

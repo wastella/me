@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-/// Narrate on the Mac lives in the menu bar: it keeps syncing and preparing audio in the
+/// MeReader on the Mac lives in the menu bar: it keeps syncing and preparing audio in the
 /// background and never shows a Dock icon (LSUIElement). The library opens from the menu bar.
 final class MacAppDelegate: NSObject, NSApplicationDelegate {
     private var launchedAtLogin = false
@@ -68,7 +68,7 @@ struct MenuBarPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Narrate").font(.headline)
+                Text("MeReader").font(.headline)
                 Spacer()
                 SyncPill { MacAppDelegate.showLibrary(openWindow) }
             }

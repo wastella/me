@@ -24,7 +24,7 @@ struct KokoroSettingsSection: View {
                 }
             } else {
                 Toggle("Prepare audio in the background", isOn: $renderer.enabled)
-                Toggle("Open Narrate when you log in", isOn: $renderer.openAtLogin)
+                Toggle("Open MeReader when you log in", isOn: $renderer.openAtLogin)
                 Picker("Keep ready ahead", selection: $renderer.hoursAhead) {
                     Text("2 hours").tag(2.0)
                     Text("6 hours").tag(6.0)
@@ -59,7 +59,7 @@ struct KokoroSettingsSection: View {
         } header: {
             Text("Kokoro neural voice")
         } footer: {
-            Text("While your Mac is on, Narrate prepares the next chapters of your books with Kokoro and puts them in iCloud Drive › Narrate › Audio. Your iPhone copies them ahead of time and plays them, screen off, in the car. Chapters that aren't ready yet use the voice below. Changing the voice re-prepares upcoming chapters.")
+            Text("While your Mac is on, MeReader prepares the next chapters of your books with Kokoro and puts them in iCloud Drive › Narrate › Audio. Your iPhone copies them ahead of time and plays them, screen off, in the car. Chapters that aren't ready yet use the voice below. Changing the voice re-prepares upcoming chapters.")
         }
     }
 

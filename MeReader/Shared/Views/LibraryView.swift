@@ -177,7 +177,7 @@ struct LibraryView: View {
         HStack(spacing: 14) {
             Image(systemName: "clock.badge.exclamationmark").font(.title2).foregroundStyle(Palette.warn)
             VStack(alignment: .leading, spacing: 2) {
-                Text(AppExpiry.daysLeft.map { $0 <= 0 ? "Narrate expires today" : "Narrate expires in \($0) day\($0 == 1 ? "" : "s")" } ?? "Narrate expires soon")
+                Text(AppExpiry.daysLeft.map { $0 <= 0 ? "MeReader expires today" : "MeReader expires in \($0) day\($0 == 1 ? "" : "s")" } ?? "MeReader expires soon")
                     .font(.subheadline.weight(.semibold))
                 Text("Keep your Mac on the same Wi‑Fi and it reinstalls automatically. Your place is safe either way.")
                     .font(.caption).foregroundStyle(Palette.secondary)
@@ -219,7 +219,7 @@ struct LibraryView: View {
                 Image(systemName: "books.vertical.fill").font(.system(size: 48)).foregroundStyle(Palette.accent)
             }
             Text("Your library is empty").font(.title2.bold())
-            Text("Add any EPUB. Read it, or have it read aloud. Narrate keeps your place between the two, on every device.")
+            Text("Add any EPUB. Read it, or have it read aloud. MeReader keeps your place between the two, on every device.")
                 .multilineTextAlignment(.center).foregroundStyle(Palette.secondary).frame(maxWidth: 360)
             Button { showImporter = true } label: {
                 Label("Add an EPUB", systemImage: "plus").font(.headline)
