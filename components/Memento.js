@@ -22,13 +22,16 @@ export function useMemento({ recent = false, every = 30_000 } = {}) {
       setState(s);
     } catch {}
   }, [recent]);
+  // While a reminder is on screen, check every 1.5 seconds so answering on
+  // another device clears this one almost at once.
+  const showing = !!state?.active?.length;
   useEffect(() => {
     load();
-    const t = setInterval(load, every);
+    const t = setInterval(load, showing ? 1500 : every);
     const wake = () => { if (!document.hidden) load(); };
     document.addEventListener('visibilitychange', wake); window.addEventListener('focus', wake);
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', wake); window.removeEventListener('focus', wake); };
-  }, [load, every]);
+  }, [load, every, showing]);
   return { state, reload: load, skew };
 }
 

@@ -227,6 +227,8 @@ final class LockController {
     private var timer: Timer?
     private var lockUntil = Date()
     private var kiosk = false
+    private var ticks = 0
+    var whileShowing: () -> Void = {}
     private(set) var current: Memento?
     var isHolding: Bool { current != nil && model.locked }
     var windowed = false
@@ -286,6 +288,10 @@ final class LockController {
         for w in windows where !windowed { w.alphaValue = 0; w.animator().alphaValue = 1 }
     }
     private func tickClock() {
+        // While a reminder is up, check with Me about once a second, so answering
+        // on another device clears this one almost at once.
+        ticks += 1
+        if ticks % 4 == 0 { whileShowing() }
         model.remaining = max(0, lockUntil.timeIntervalSinceNow)
         if model.locked {
             if model.remaining <= 0 {
@@ -419,6 +425,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var skew: TimeInterval = 0
     var demo: TimeInterval?
     var dueTimer: Timer?
+    var fetching = false
     let home = HomeModel()
     var homeWindow: NSWindow?
     var status: String = "Starting…" { didSet { home.status = status; home.connected = status == "Connected" } }
@@ -444,6 +451,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return
         }
         lock.answer = { [weak self] m, action, done in self?.client.answer(m.id, action) { ok in done(ok); if ok { self?.poll() } } }
+        lock.whileShowing = { [weak self] in self?.poll() }
         home.setKey = { [weak self] in self?.askForKey() }
         home.test = { [weak self] in self?.testLock() }
         home.toggleLogin = { [weak self] in self?.toggleLogin() }
@@ -495,8 +503,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func poll() {
         guard client.hasKey else { status = "Needs its key (Set Key…)"; return }
+        guard !fetching else { return }   // one question at a time
+        fetching = true
         client.fetch { [weak self] state, reachable, keyOK in
             guard let self else { return }
+            self.fetching = false
             guard let state else { self.status = !reachable ? "Offline: can’t reach Me" : keyOK ? "Me didn’t answer properly" : "That key isn’t right (Set Key…)"; return }
             self.status = "Connected"
             self.upcoming = state.upcoming
