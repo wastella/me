@@ -8,8 +8,10 @@ Naming: the app was first called MeMento. Everything William sees says RemindMe 
 
 - **Reminders live in the dashboard**, not here: table `mementos`, logic in `/lib/memento.js`, routes `/app/api/memento` (signed-in web app) and `/app/api/memento/device` (this Mac app; Bearer key derived from `SESSION_SECRET`, shown in Me → Settings → RemindMe). The server's clock decides when a reminder fires and when its lock ends, so every device agrees.
 - **Claude** sets them with the dashboard connector's `set_reminder` tool and chooses `lock_minutes` itself (guidance is in the tool description). Also `list_reminders`, `cancel_reminder`.
-- **This folder is the Mac app**: one Swift file (`Sources/main.swift`, AppKit + SwiftUI), built with `swiftc` by `build.sh`. No Xcode project. It's a menu-bar app (bell icon, no Dock icon) with one small window (status, upcoming reminders, Test Lock, Set Key, Open at Login) that appears whenever William opens the app, because the bell can be hidden behind the MacBook's notch. It asks the dashboard every 30 seconds, and at the moment the next reminder is due, what should be on screen.
+- **This folder is the Mac app**: one Swift file (`Sources/main.swift`, AppKit + SwiftUI), built with `swiftc` by `build.sh`. No Xcode project. It's a menu-bar app (bell icon, no Dock icon) with one small window (status, upcoming reminders, Test Lock, Set Key, Open at Login) that appears whenever William opens the app, because the bell can be hidden behind the MacBook's notch. It asks the dashboard every 10 seconds, and at the moment the next reminder is due, what should be on screen.
 - **The phone** has no app here: the dashboard's web app shows the same takeover (`/components/Memento.js`, page `/remindme`) and gets a web push when one fires, if notifications are set up. iOS doesn't let apps lock the phone, so the hard lock is Mac-only.
+
+- **Seeing that devices are in sync:** each Mac sends its name when it checks in (`X-Device`), the dashboard keeps the last time it heard from each (kv `memento_devices`), and the app's window lists them. The window's test button fires a real 15-second reminder on every device (`source: 'test'`, kept out of history).
 
 ## Behaviour to keep
 

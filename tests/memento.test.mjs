@@ -60,3 +60,16 @@ test('a reminder nobody answers is marked missed after 12 hours', async () => {
   assert.deepEqual((await M.tick()).active, []);
   assert.equal((await M.recent()).find((x) => x.id === m.id).status, 'missed');
 });
+
+test('devices check in, and the test reminder fires at once without cluttering history', async () => {
+  let d = await M.checkIn('MacBook Air');
+  assert.deepEqual(d.map((x) => x.name), ['MacBook Air']);
+  d = await M.checkIn('Mac mini');
+  assert.deepEqual(d.map((x) => x.name).sort(), ['Mac mini', 'MacBook Air']);
+  assert.equal((await M.checkIn('')).some((x) => x.name === 'A Mac on an older RemindMe'), true);
+  const t = await M.createTest();
+  const s = await M.tick();
+  assert.equal(s.active.find((x) => x.id === t.id).locked, true);
+  await M.answer(t.id, 'skip');
+  assert.equal((await M.recent()).some((x) => x.id === t.id), false);
+});

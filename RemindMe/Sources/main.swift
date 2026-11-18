@@ -60,7 +60,9 @@ struct Memento: Decodable, Identifiable, Equatable {
     let lock_seconds: Int
     let fired_at: String?
 }
-struct ServerState: Decodable { let now: String; let active: [Memento]; let upcoming: [Memento] }
+struct Device: Decodable, Identifiable { let name: String; let seen: String; var id: String { name } }
+struct ServerState: Decodable { let now: String; let active: [Memento]; let upcoming: [Memento]; let devices: [Device]? }
+let thisMac = Host.current().localizedName ?? "A Mac"
 
 func parseDate(_ s: String?) -> Date? {
     guard let s else { return nil }
@@ -79,6 +81,7 @@ final class Client {
         var r = URLRequest(url: url, timeoutInterval: 12)
         r.httpMethod = method
         r.setValue("Bearer \(config.key)", forHTTPHeaderField: "Authorization")
+        r.setValue(thisMac.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "Mac", forHTTPHeaderField: "X-Device")   // so Me can show which Macs are connected
         r.cachePolicy = .reloadIgnoringLocalCacheData
         if let body { r.httpBody = try? JSONEncoder().encode(body); r.setValue("application/json", forHTTPHeaderField: "Content-Type") }
         return r
@@ -90,6 +93,13 @@ final class Client {
             let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
             let state = data.flatMap { try? JSONDecoder().decode(ServerState.self, from: $0) }
             DispatchQueue.main.async { done(code == 200 ? state : nil, code != 0, code != 404 && code != 401) }
+        }.resume()
+    }
+    func test(_ done: @escaping (Bool) -> Void) {
+        guard let r = request("POST", body: ["action": "test"]) else { done(false); return }
+        URLSession.shared.dataTask(with: r) { _, resp, _ in
+            let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+            DispatchQueue.main.async { done(code == 200) }
         }.resume()
     }
     func answer(_ id: String, _ action: String, _ done: @escaping (Bool) -> Void) {
@@ -325,6 +335,8 @@ final class HomeModel: ObservableObject {
     @Published var connected = false
     @Published var upcoming: [Memento] = []
     @Published var openAtLogin = false
+    @Published var devices: [Device] = []
+    @Published var note = ""
     var setKey: () -> Void = {}
     var test: () -> Void = {}
     var toggleLogin: () -> Void = {}
@@ -333,6 +345,7 @@ final class HomeModel: ObservableObject {
 
 struct HomeView: View {
     @ObservedObject var model: HomeModel
+    static func ago(_ s: TimeInterval) -> String { s < 3600 ? "\(Int(s / 60)) min ago" : s < 86400 ? "\(Int(s / 3600)) hr ago" : "\(Int(s / 86400)) days ago" }
     static let time: DateFormatter = { let f = DateFormatter(); f.doesRelativeDateFormatting = true; f.dateStyle = .short; f.timeStyle = .short; return f }()
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -361,14 +374,35 @@ struct HomeView: View {
                     }
                 }
             }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Look.panel).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            VStack(alignment: .leading, spacing: 0) {
+                Text("CONNECTED DEVICES").font(.system(size: 10.5, weight: .semibold)).foregroundColor(Look.faint).padding(.bottom, 8)
+                if model.devices.isEmpty {
+                    Text(model.connected ? "Checking…" : "Not connected yet.").font(.system(size: 13.5)).foregroundColor(Look.muted)
+                } else {
+                    ForEach(model.devices) { d in
+                        let age = parseDate(d.seen).map { -$0.timeIntervalSinceNow } ?? 1e9
+                        HStack {
+                            Circle().fill(age < 180 ? Color.green : Look.faint).frame(width: 7, height: 7)
+                            Text(d.name + (d.name == thisMac ? " (this Mac)" : "")).font(.system(size: 13.5, weight: .medium)).foregroundColor(Look.text).lineLimit(1)
+                            Spacer()
+                            Text(age < 180 ? "connected" : "last seen " + HomeView.ago(age)).font(.system(size: 12)).foregroundColor(Look.muted)
+                        }.padding(.vertical, 4)
+                    }
+                    if model.devices.count < 2 {
+                        Text("No other Mac has checked in. On the other Mac, open RemindMe: it should say Connected.")
+                            .font(.system(size: 12)).foregroundColor(Look.amber).padding(.top, 6).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Look.panel).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             Toggle("Open at Login", isOn: Binding(get: { model.openAtLogin }, set: { _ in model.toggleLogin() }))
                 .toggleStyle(.checkbox).font(.system(size: 13)).foregroundColor(Look.text)
             HStack(spacing: 8) {
-                Button("Test Lock (5 seconds)") { model.test() }
+                Button("Test on Every Mac (15 seconds)") { model.test() }
                 Button(model.connected ? "Change Key…" : "Set Key…") { model.setKey() }
                 Spacer()
                 Button("Quit") { model.quit() }
             }.buttonStyle(MeButtonStyle())
+            if !model.note.isEmpty { Text(model.note).font(.system(size: 12)).foregroundColor(Look.muted) }
         }
         .padding(22).frame(width: 460).background(Look.bg).preferredColorScheme(.dark)
     }
@@ -420,8 +454,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 NSApp.terminate(nil)
             }
         }
-        // Check in every 30 seconds for new reminders, and again at the exact moment the next one is due.
-        Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in self?.poll() }
+        // Check in every 10 seconds (so both Macs stay in step), and again at the exact moment the next reminder is due.
+        Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in self?.poll() }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in self?.poll() }
         poll()
         if !client.hasKey { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { self.askForKey() } }
@@ -436,8 +470,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             let w = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
             w.title = "RemindMe"; w.titlebarAppearsTransparent = true; w.titleVisibility = .hidden
             w.isReleasedWhenClosed = false; w.backgroundColor = NSColor(red: 0x0c / 255, green: 0x0c / 255, blue: 0x0d / 255, alpha: 1)
-            w.contentView = NSHostingView(rootView: HomeView(model: home))
-            w.setContentSize(w.contentView!.fittingSize); w.center()
+            let host = NSHostingController(rootView: HomeView(model: home))
+            host.sizingOptions = [.preferredContentSize]   // the window grows and shrinks with what it shows
+            w.contentViewController = host
+            w.center()
             homeWindow = w
         }
         NSApp.activate(ignoringOtherApps: true)
@@ -453,6 +489,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             guard let state else { self.status = !reachable ? "Offline: can’t reach Me" : keyOK ? "Me didn’t answer properly" : "That key isn’t right (Set Key…)"; return }
             self.status = "Connected"
             self.upcoming = state.upcoming
+            self.home.devices = state.devices ?? []
             if let now = parseDate(state.now) { self.skew = now.timeIntervalSinceNow }
             self.dueTimer?.invalidate()
             if let next = state.upcoming.compactMap({ parseDate($0.due_at) }).min() {
@@ -486,7 +523,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Open RemindMe", action: #selector(openHome), keyEquivalent: "").target = self
-        menu.addItem(withTitle: "Test Lock (5 seconds)", action: #selector(testLock), keyEquivalent: "").target = self
+        menu.addItem(withTitle: "Test on Every Mac (15 seconds)", action: #selector(testLock), keyEquivalent: "").target = self
         let login = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: ""); login.target = self
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
@@ -496,11 +533,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc func openHome() { showHome() }
+    // A real reminder, sent through Me, so it shows on every connected Mac (and proves they're in sync).
     @objc func testLock() {
-        let m = Memento(id: "test-\(Date().timeIntervalSince1970)", text: "This is what a reminder looks like", due_at: "", lock_seconds: 5, fired_at: nil)
-        let real = lock.answer
-        lock.answer = { [weak self] _, _, done in done(true); self?.lock.answer = real }
-        lock.show(m, skew: 0)
+        guard client.hasKey else { askForKey(); return }
+        home.note = "Sending a test to every device…"
+        client.test { [weak self] ok in
+            self?.home.note = ok ? "Test sent. Every connected Mac should lock within 10 seconds." : "Couldn’t reach Me to send the test."
+            if ok { self?.poll() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 20) { self?.home.note = "" }
+        }
     }
     @objc func toggleLogin() {
         defer { home.openAtLogin = SMAppService.mainApp.status == .enabled }
