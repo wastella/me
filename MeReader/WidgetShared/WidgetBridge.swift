@@ -9,9 +9,14 @@ struct WidgetSnapshot: Codable, Equatable {
     var chapterTitle: String
     var detail: String          // e.g. "Chapter 1,687 of 2,716"
     var isPlaying: Bool
+    /// Narration speed, e.g. 1.5. Optional so an older saved snapshot still loads.
+    var rate: Double?
+    /// The book the "next book" button would switch to, if there is more than one.
+    var nextBookTitle: String?
 
     static let group = "group.idk.Narrate"
     static let kind = "MeReaderWidget"
+    static let controlsKind = "MeReaderControls"
     private static let key = "widgetSnapshot"
 
     static var container: URL? { FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) }
@@ -37,6 +42,38 @@ struct TogglePlaybackIntent: AudioPlaybackIntent {
     func perform() async throws -> some IntentResult {
         #if !WIDGET_EXTENSION
         await WidgetBridge.toggle()
+        #endif
+        return .result()
+    }
+}
+
+/// Buttons of the controls widget. Audio intents, so they run inside the app while it plays.
+struct SlowerIntent: AudioPlaybackIntent {
+    static var title: LocalizedStringResource = "Slower"
+    func perform() async throws -> some IntentResult {
+        #if !WIDGET_EXTENSION
+        await WidgetBridge.stepSpeed(-1)
+        #endif
+        return .result()
+    }
+}
+
+struct FasterIntent: AudioPlaybackIntent {
+    static var title: LocalizedStringResource = "Faster"
+    func perform() async throws -> some IntentResult {
+        #if !WIDGET_EXTENSION
+        await WidgetBridge.stepSpeed(1)
+        #endif
+        return .result()
+    }
+}
+
+struct NextBookIntent: AudioPlaybackIntent {
+    static var title: LocalizedStringResource = "Next Book"
+    static var description = IntentDescription("Switches to your next most recent book and starts reading it aloud.")
+    func perform() async throws -> some IntentResult {
+        #if !WIDGET_EXTENSION
+        await WidgetBridge.nextBook()
         #endif
         return .result()
     }

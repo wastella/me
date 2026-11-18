@@ -42,6 +42,11 @@ screen (dimmed) so saved positions never shift.
 ## Widget (also on the CarPlay screen)
 A "Continue listening" widget shows your current book with a play / pause button. Add it on the iPhone Home Screen, and in iOS 26 to the car: Settings → General → CarPlay → your car → Widgets. No CarPlay entitlement or paid account is needed for this.
 
+A second small widget, "Speed and book", has slower / faster buttons and a button for your next book.
+
+## Siri
+"Continue listening in MeReader", "Pause MeReader", "Set MeReader speed to 1.5" (0.75, 1, 1.25, 1.5, 1.75, 2), "Play <book title> in MeReader", "Next book in MeReader". They also appear as actions in the Shortcuts app.
+
 ## CarPlay
 MeReader plays through CarPlay's built-in **Now Playing** screen today. The dashboard app (tap
 "Continue" → sync → play) is written and runs in the simulator's CarPlay screen. Showing up as its own icon

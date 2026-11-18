@@ -6,7 +6,10 @@ import AppIntents
 /// Works on the Home Screen, in StandBy, and on the CarPlay widget screen (iOS 26).
 @main
 struct MeReaderWidgetBundle: WidgetBundle {
-    var body: some Widget { MeReaderWidget() }
+    var body: some Widget {
+        MeReaderWidget()
+        MeReaderControlsWidget()
+    }
 }
 
 struct MeReaderWidget: Widget {
@@ -121,5 +124,67 @@ struct MeMark: View {
 extension Color {
     init(hex: UInt32) {
         self.init(red: Double((hex >> 16) & 0xff) / 255, green: Double((hex >> 8) & 0xff) / 255, blue: Double(hex & 0xff) / 255)
+    }
+}
+
+/// Speed down / up and "next book". A separate small widget, so it also fits the CarPlay widget screen.
+struct MeReaderControlsWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: WidgetSnapshot.controlsKind, provider: Provider()) { entry in
+            ControlsView(snapshot: entry.snapshot)
+                .containerBackground(for: .widget) { Color(hex: 0x0c0c0d) }
+        }
+        .configurationDisplayName("Speed and book")
+        .description("Change the narration speed, or switch to your next book.")
+        .supportedFamilies([.systemSmall])
+    }
+}
+
+struct ControlsView: View {
+    let snapshot: WidgetSnapshot?
+
+    private var rateText: String {
+        let r = snapshot?.rate ?? 1
+        return (r == r.rounded() ? String(Int(r)) : String(format: "%g", r)) + "×"
+    }
+
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 0) {
+                step("minus", "Slower", SlowerIntent())
+                Text(rateText)
+                    .font(.system(size: 22, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .contentTransition(.numericText())
+                step("plus", "Faster", FasterIntent())
+            }
+            Button(intent: NextBookIntent()) {
+                HStack(spacing: 6) {
+                    Image(systemName: "forward.end.fill").font(.system(size: 12, weight: .bold))
+                    Text(snapshot?.nextBookTitle ?? "Only one book")
+                        .font(.system(size: 13, weight: .medium)).lineLimit(1)
+                }
+                .foregroundStyle(snapshot?.nextBookTitle == nil ? muted : .white)
+                .padding(.horizontal, 10)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(Color(hex: 0x1c1c1f), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .disabled(snapshot?.nextBookTitle == nil)
+            .accessibilityLabel("Next book" + (snapshot?.nextBookTitle.map { ": \($0)" } ?? ""))
+        }
+    }
+
+    private func step(_ symbol: String, _ label: String, _ intent: some AppIntent) -> some View {
+        Button(intent: intent) {
+            Image(systemName: symbol)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 46, height: 46)
+                .background(accent, in: Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 }
