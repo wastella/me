@@ -8,7 +8,7 @@ Naming: the app was first called MeMento. Everything William sees says RemindMe 
 
 - **Reminders live in the dashboard**, not here: table `mementos`, logic in `/lib/memento.js`, routes `/app/api/memento` (signed-in web app) and `/app/api/memento/device` (this Mac app; Bearer key derived from `SESSION_SECRET`, shown in Me → Settings → RemindMe). The server's clock decides when a reminder fires and when its lock ends, so every device agrees.
 - **Claude** sets them with the dashboard connector's `set_reminder` tool and chooses `lock_minutes` itself (guidance is in the tool description). Also `list_reminders`, `cancel_reminder`.
-- **This folder is the Mac app**: one Swift file (`Sources/main.swift`, AppKit + SwiftUI), built with `swiftc` by `build.sh`. No Xcode project. It's a menu-bar app (bell icon, no Dock icon) that asks the dashboard every 30 seconds, and at the moment the next reminder is due, what should be on screen.
+- **This folder is the Mac app**: one Swift file (`Sources/main.swift`, AppKit + SwiftUI), built with `swiftc` by `build.sh`. No Xcode project. It's a menu-bar app (bell icon, no Dock icon) with one small window (status, upcoming reminders, Test Flash, Set Key, Open at Login) that appears whenever William opens the app, because the bell can be hidden behind the MacBook's notch. It asks the dashboard every 30 seconds, and at the moment the next reminder is due, what should be on screen.
 - **The phone** has no app here: the dashboard's web app shows the same takeover (`/components/Memento.js`, page `/remindme`) and gets a web push when one fires, if notifications are set up. iOS doesn't let apps lock the phone, so the hard lock is Mac-only.
 
 ## Behaviour to keep
@@ -23,6 +23,6 @@ Naming: the app was first called MeMento. Everything William sees says RemindMe 
 
 - `./build.sh` builds `build/RemindMe.app`; `./build.sh install` also copies it to `/Applications` and starts it. First run asks for the key. Do this on each Mac (MacBook Air and Mac mini).
 - `tools/make-icon.sh` redraws the icon from the Me icon.
-- Test without the server: `build/RemindMe.app/Contents/MacOS/RemindMe --demo 8` (a real 8-second lock), add `--windowed` for an ordinary window, and `--snapshot /tmp/shot` to save pictures of each stage. `--verbose` prints what it's doing. `REMINDME_URL` / `REMINDME_KEY` point it at another server.
+- Test without the server: `build/RemindMe.app/Contents/MacOS/RemindMe --demo 8` (a real 8-second lock), add `--windowed` for an ordinary window, and `--snapshot /tmp/shot` to save pictures of each stage. `--verbose` prints what it's doing; `--home-snapshot /tmp/home.png` saves a picture of the window. `REMINDME_URL` / `REMINDME_KEY` point it at another server.
 - The key and server address are stored in `~/Library/Application Support/RemindMe/config.json` (readable only by the user). Never print the key.
 - A real lock takes over the whole Mac: warn William before running one, and keep test locks to a few seconds.

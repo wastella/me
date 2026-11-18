@@ -291,16 +291,73 @@ final class LockController {
     }
 }
 
+// MARK: - The window you get when you open RemindMe
+final class HomeModel: ObservableObject {
+    @Published var status = "Starting…"
+    @Published var connected = false
+    @Published var upcoming: [Memento] = []
+    @Published var openAtLogin = false
+    var setKey: () -> Void = {}
+    var test: () -> Void = {}
+    var toggleLogin: () -> Void = {}
+    var quit: () -> Void = {}
+}
+
+struct HomeView: View {
+    @ObservedObject var model: HomeModel
+    static let time: DateFormatter = { let f = DateFormatter(); f.doesRelativeDateFormatting = true; f.dateStyle = .short; f.timeStyle = .short; return f }()
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 10) {
+                Text("Me").font(.system(size: 13, weight: .bold)).foregroundColor(.white)
+                    .frame(width: 30, height: 30).background(Look.amber).clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                Text("RemindMe").font(.system(size: 19, weight: .semibold)).foregroundColor(Look.text)
+                Spacer()
+                Circle().fill(model.connected ? Color.green : Look.faint).frame(width: 8, height: 8)
+                Text(model.status).font(.system(size: 12.5)).foregroundColor(Look.muted)
+            }
+            Text("RemindMe runs in the background (the bell in the menu bar). Ask Claude to “remind me to…” and it takes over your screens when the time comes. You can close this window.")
+                .font(.system(size: 13)).foregroundColor(Look.muted).fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 0) {
+                Text("COMING UP").font(.system(size: 10.5, weight: .semibold)).foregroundColor(Look.faint).padding(.bottom, 8)
+                if model.upcoming.isEmpty {
+                    Text("No reminders coming up.").font(.system(size: 13.5)).foregroundColor(Look.muted)
+                } else {
+                    ForEach(model.upcoming.prefix(6)) { m in
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(m.text).font(.system(size: 13.5, weight: .medium)).foregroundColor(Look.text).lineLimit(1)
+                            Spacer()
+                            Text((parseDate(m.due_at).map { HomeView.time.string(from: $0) } ?? "") + (m.lock_seconds > 0 ? " · locks \(max(1, Int((Double(m.lock_seconds) / 60).rounded()))) min" : ""))
+                                .font(.system(size: 12)).foregroundColor(Look.muted)
+                        }.padding(.vertical, 5)
+                    }
+                }
+            }.padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Look.panel).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            Toggle("Open at Login", isOn: Binding(get: { model.openAtLogin }, set: { _ in model.toggleLogin() }))
+                .toggleStyle(.checkbox).font(.system(size: 13)).foregroundColor(Look.text)
+            HStack(spacing: 8) {
+                Button("Test Flash (5 seconds)") { model.test() }
+                Button(model.connected ? "Change Key…" : "Set Key…") { model.setKey() }
+                Spacer()
+                Button("Quit") { model.quit() }
+            }
+        }
+        .padding(22).frame(width: 460).background(Look.bg).preferredColorScheme(.dark)
+    }
+}
+
 // MARK: - The menu bar app
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let client = Client()
     let lock = LockController()
     var item: NSStatusItem!
-    var upcoming: [Memento] = []
-    var status = "Starting…"
     var skew: TimeInterval = 0
     var demo: TimeInterval?
     var dueTimer: Timer?
+    let home = HomeModel()
+    var homeWindow: NSWindow?
+    var status: String = "Starting…" { didSet { home.status = status; home.connected = status == "Connected" } }
+    var upcoming: [Memento] = [] { didSet { home.upcoming = upcoming } }
 
     func applicationDidFinishLaunching(_ n: Notification) {
         let args = CommandLine.arguments
@@ -323,12 +380,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return
         }
         lock.answer = { [weak self] m, action, done in self?.client.answer(m.id, action) { ok in done(ok); if ok { self?.poll() } } }
+        home.setKey = { [weak self] in self?.askForKey() }
+        home.test = { [weak self] in self?.testFlash() }
+        home.toggleLogin = { [weak self] in self?.toggleLogin() }
+        home.quit = { NSApp.terminate(nil) }
+        home.openAtLogin = SMAppService.mainApp.status == .enabled
+        // Show the window when you open the app yourself, but not when it starts by itself at login.
+        if !startedAtLogin() { showHome() }
+        if let i = args.firstIndex(of: "--home-snapshot"), let path = args.dropFirst(i + 1).first {   // a picture of the window, to check the design
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
+                if let v = self.homeWindow?.contentView, let rep = v.bitmapImageRepForCachingDisplay(in: v.bounds) { v.cacheDisplay(in: v.bounds, to: rep); try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: path)) }
+                NSApp.terminate(nil)
+            }
+        }
         // Check in every 30 seconds for new reminders, and again at the exact moment the next one is due.
         Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in self?.poll() }
         NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in self?.poll() }
         poll()
-        if !client.hasKey { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.askForKey() } }
+        if !client.hasKey { DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { self.askForKey() } }
     }
+
+    func startedAtLogin() -> Bool {
+        guard let e = NSAppleEventManager.shared().currentAppleEvent, e.eventID == kAEOpenApplication else { return false }
+        return e.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem
+    }
+    func showHome() {
+        if homeWindow == nil {
+            let w = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
+            w.title = "RemindMe"; w.titlebarAppearsTransparent = true; w.titleVisibility = .hidden
+            w.isReleasedWhenClosed = false; w.backgroundColor = NSColor(red: 0x0c / 255, green: 0x0c / 255, blue: 0x0d / 255, alpha: 1)
+            w.contentView = NSHostingView(rootView: HomeView(model: home))
+            w.setContentSize(w.contentView!.fittingSize); w.center()
+            homeWindow = w
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        homeWindow?.makeKeyAndOrderFront(nil)
+    }
+    // Opening RemindMe again (Finder, Spotlight, Launchpad) brings the window back.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool { if demo == nil && !lock.isHolding { showHome() }; return false }
 
     func poll() {
         guard client.hasKey else { status = "Needs its key (Set Key…)"; return }
@@ -369,6 +458,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
         }
         menu.addItem(.separator())
+        menu.addItem(withTitle: "Open RemindMe", action: #selector(openHome), keyEquivalent: "").target = self
         menu.addItem(withTitle: "Test Flash (5 seconds)", action: #selector(testFlash), keyEquivalent: "").target = self
         let login = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: ""); login.target = self
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
@@ -378,6 +468,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(withTitle: "Quit RemindMe", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
     }
 
+    @objc func openHome() { showHome() }
     @objc func testFlash() {
         let m = Memento(id: "test-\(Date().timeIntervalSince1970)", text: "This is what a reminder looks like", due_at: "", lock_seconds: 5, fired_at: nil)
         let real = lock.answer
@@ -385,6 +476,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         lock.show(m, skew: 0)
     }
     @objc func toggleLogin() {
+        defer { home.openAtLogin = SMAppService.mainApp.status == .enabled }
         do { if SMAppService.mainApp.status == .enabled { try SMAppService.mainApp.unregister() } else { try SMAppService.mainApp.register() } }
         catch { let a = NSAlert(); a.messageText = "Couldn’t change Open at Login"; a.informativeText = "Add RemindMe yourself in System Settings → General → Login Items."; a.runModal() }
     }
