@@ -14,3 +14,4 @@ playwright.config.mjs
 
 # Native apps in the Me suite are not part of the website.
 MeReader/
+MeMento/

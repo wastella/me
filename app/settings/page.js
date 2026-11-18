@@ -82,6 +82,20 @@ function Settings() {
 
         {status?.push?.enabled && <Notifications publicKey={status.push.publicKey} />}
 
+        {status?.memento && (
+          <section className="card">
+            <div className="card-head"><h2>MeMento</h2></div>
+            <div className="card-body">
+              <p>Reminders you can’t ignore. Ask Claude “remind me to move the laundry in 40 minutes”: when it goes off, your Macs flash and lock on the reminder for as long as the job takes, then ask if you did it. <a href="/memento">See your reminders</a>.</p>
+              <p><b>On each Mac:</b> install the MeMento app (in the Me folder, run <code>./MeMento/build.sh install</code>), click the bell in the menu bar → <b>Set Key…</b>, and paste this key. Turn on <b>Open at Login</b> there too.</p>
+              <CopyField value={status.memento.key} secretLabel="Key" />
+              <p style={{ marginTop: 12 }}><b>On your iPhone:</b> {status?.push?.enabled
+                ? 'you get a notification when a reminder goes off, and it fills the screen when you open Me. Turn on notifications in the card above on the phone itself.'
+                : 'the reminder fills the screen whenever Me is open. To also get a notification while the phone is in your pocket, notifications need their one-time setup (scripts/setup-notifications.sh).'} iPhones don’t let any app lock the whole phone, so the hard lock is Mac-only.</p>
+            </div>
+          </section>
+        )}
+
         {status?.shortcut && (
           <section className="card">
             <div className="card-head"><h2>Siri</h2></div>

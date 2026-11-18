@@ -7,6 +7,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { db } from '@/lib/db';
 import { snapshot as taskSnapshot, createTask, updateTask, completeTask, deleteTask } from '@/lib/tasks';
 import { meals as mealPlan, withMeals } from '@/lib/meals';
+import { create as createMemento, tick as mementoState, recent as recentMementos, cancel as cancelMemento } from '@/lib/memento';
 import { snapshot as trainingSnapshot, saveWorkout, togglePosture } from '@/lib/training';
 import { snapshot as notesSnapshot, createNote, updateNote, deleteNote, createCategory, categoryByName } from '@/lib/notes';
 import { respondToEvent, listEvents, listCalendars, createEvent, updateEvent, deleteEvent, googleConnected } from '@/lib/google';
@@ -260,6 +261,38 @@ const handler = createMcpHandler((server) => {
     title: 'Delete note', description: 'Permanently delete a note. Confirm with the user (quote its first line) before deleting.',
     inputSchema: z.object({ id: z.string().min(1) }),
   }, async ({ id }) => { await deleteNote(id); return text('Deleted.'); });
+
+  const whenText = (iso) => `${localDate(iso)} ${localTime(iso)}`;
+  server.registerTool('set_reminder', {
+    title: 'Set reminder (MeMento)',
+    description: "Set a MeMento reminder. When it goes off, the user's Mac screens flash and show it full-screen (and their phone is notified), so they can't miss it. lock_minutes is how long the screens stay locked on the reminder: YOU choose it, as a realistic time to get up and actually do the thing, so they can't just dismiss it and keep working. Guide: a quick physical chore (move the laundry, take out the trash, take a pill, feed the dog) 3–5; a longer one (fold laundry, shower, tidy the room, walk the dog) 10–20; something that isn't done at home right then, or just a heads-up (leave for school, call someone, an idea to remember) 0–1. Use 0 for a flash with no lock. Never more than 60. During the lock they cannot dismiss it; afterwards they answer Done or Not yet (it returns in 10 minutes). Give either in_minutes, or date + time in the user's timezone. Tell the user the time and the lock length you chose.",
+    inputSchema: z.object({
+      text: z.string().min(1).max(200).describe('What to do, as a short instruction: "Move the laundry to the dryer"'),
+      in_minutes: z.number().min(0).max(60 * 24 * 60).optional(),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), time: z.string().regex(/^\d{2}:\d{2}$/).optional().describe('HH:MM, 24-hour'),
+      lock_minutes: z.number().min(0).max(60).describe('How long the screens stay locked; see the description'),
+    }),
+  }, async ({ text: what, in_minutes, date, time, lock_minutes }) => {
+    try {
+      if (in_minutes === undefined && !(date && time)) return fail('Pass in_minutes, or both date and time.');
+      const m = await createMemento({ text: what, ...(in_minutes !== undefined ? { in_minutes } : { due_at: zonedISO(date, time) }), lock_seconds: Math.round(lock_minutes * 60), source: 'claude' });
+      return text(`Reminder set for ${whenText(m.due_at)}: "${m.text}". ${m.lock_seconds ? `Screens lock for ${Math.round(m.lock_seconds / 6) / 10} min.` : 'Flash only, no lock.'} (id ${m.id})`);
+    } catch (e) { return fail(e.message); }
+  });
+
+  server.registerTool('list_reminders', {
+    title: 'Reminders (MeMento)', description: 'MeMento reminders: ones on screen now, upcoming ones, and how recent ones ended (done, skipped = the user used the emergency exit, missed = never answered).',
+    inputSchema: z.object({}),
+  }, async () => {
+    const s = await mementoState();
+    const row = (m) => ({ id: m.id, reminder: m.text, at: whenText(m.due_at), lock_minutes: Math.round(m.lock_seconds / 6) / 10, snoozed: m.snoozes || undefined });
+    return text({ on_screen_now: s.active.map(row), upcoming: s.upcoming.map(row), recent: (await recentMementos(10)).map((m) => ({ ...row(m), outcome: m.status })) });
+  });
+
+  server.registerTool('cancel_reminder', {
+    title: 'Cancel reminder (MeMento)', description: 'Cancel a MeMento reminder that has not gone off yet (id from list_reminders). One that is already on screen cannot be cancelled: the user has to answer it. Confirm with the user first.',
+    inputSchema: z.object({ id: z.string().min(1) }),
+  }, async ({ id }) => { try { await cancelMemento(id); return text('Cancelled.'); } catch (e) { return fail(e.message); } });
 
   server.registerTool('get_meals', {
     title: 'Meals', description: "What's planned for dinner (from Mealboard, the family's meal-planning app, which the user's mom plans in). Read-only: meals are changed in Mealboard, not here. Use for questions like what's for dinner tonight or this week, or to build a grocery list from the plan.",

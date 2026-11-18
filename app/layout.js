@@ -2,6 +2,7 @@ import './globals.css';
 import AppProvider, { OfflineBanner } from '@/components/AppProvider';
 import { DialogProvider } from '@/components/ui';
 import Sidebar from '@/components/Sidebar';
+import MementoOverlay from '@/components/Memento';
 
 export const metadata = {
   title: 'Me',
@@ -26,6 +27,7 @@ export default function RootLayout({ children }) {
               <Sidebar />
               <main className="main"><OfflineBanner />{children}</main>
             </div>
+            <MementoOverlay />
           </AppProvider>
         </DialogProvider>
       </body>

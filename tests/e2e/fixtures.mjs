@@ -42,6 +42,16 @@ export const test = base.extend({
       return r.fulfill({ json: EVENTS });
     });
     await page.route('**/api/meals**', (r) => r.fulfill({ json: { connected: true, name: 'Meals', meals: MEALS } }));
+    // MeMento: nothing on screen unless a test sets page.memento = { active, upcoming, recent }.
+    page.memento = { active: [], upcoming: [], recent: [] };
+    page.mementoCalls = [];
+    await page.route('**/api/memento**', (r) => {
+      const req = r.request();
+      if (req.method() === 'GET') return r.fulfill({ json: { now: new Date().toISOString(), ...page.memento } });
+      page.mementoCalls.push({ method: req.method(), body: req.postDataJSON?.() ?? null, url: req.url() });
+      if (req.method() === 'PATCH') page.memento = { ...page.memento, active: [] };
+      return r.fulfill({ json: { ok: true } });
+    });
     page.expectErrors = () => { page.errorsExpected = true; };
     await use(page);
     if (!page.errorsExpected) expect(problems, 'the page should log no errors').toEqual([]);

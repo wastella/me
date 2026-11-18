@@ -1,6 +1,6 @@
 import { test, expect, unique, quickAdd, addTask, row, localDate } from './fixtures.mjs';
 
-const PAGES = [['/', 'Home'], ['/tasks', 'Tasks'], ['/tasks?view=upcoming', 'Upcoming'], ['/tasks?view=done', 'Completed'], ['/calendar', 'Calendar'], ['/notes', 'Notes'], ['/training', 'Training'], ['/settings', 'Settings']];
+const PAGES = [['/', 'Home'], ['/tasks', 'Tasks'], ['/tasks?view=upcoming', 'Upcoming'], ['/tasks?view=done', 'Completed'], ['/calendar', 'Calendar'], ['/notes', 'Notes'], ['/training', 'Training'], ['/memento', 'MeMento'], ['/settings', 'Settings']];
 
 test.describe('every screen', () => {
   for (const [path, name] of PAGES) {
@@ -567,5 +567,47 @@ test.describe('dialogs', () => {
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
     await expect(opener).toBeFocused();
+  });
+});
+
+test.describe('MeMento', () => {
+  const firing = (lockMs) => { const fired = new Date(); return { id: 'm1', text: 'Move the laundry', due_at: fired.toISOString(), lock_seconds: 240, status: 'firing', snoozes: 0, fired_at: fired.toISOString(), lock_until: new Date(fired.getTime() + lockMs).toISOString(), locked: lockMs > 0 }; };
+
+  test('a firing reminder covers the app and can’t be dismissed while locked', async ({ page }) => {
+    page.memento.active = [firing(120_000)];
+    await page.goto('/');
+    const cover = page.getByRole('alertdialog', { name: 'Reminder: Move the laundry' });
+    await expect(cover).toBeVisible();
+    await expect(cover.getByText(/^[12]:\d\d$/)).toBeVisible();   // the countdown
+    await expect(cover.getByRole('button', { name: 'Done' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(cover).toBeVisible();
+    // The emergency way out is typing the whole sentence.
+    await cover.getByRole('textbox').fill('I am skipping this reminder');
+    await expect(cover).toHaveCount(0);
+    expect(page.mementoCalls.at(-1).body).toEqual({ id: 'm1', action: 'skip' });
+  });
+
+  test('once the time is up it asks whether you did it', async ({ page }) => {
+    page.memento.active = [firing(-1000)];
+    await page.goto('/tasks');
+    const cover = page.getByRole('alertdialog', { name: 'Reminder: Move the laundry' });
+    await expect(cover.getByText('Did you do it?')).toBeVisible();
+    await cover.getByRole('button', { name: 'Done' }).click();
+    await expect(cover).toHaveCount(0);
+    expect(page.mementoCalls.at(-1).body).toEqual({ id: 'm1', action: 'done' });
+  });
+
+  test('the list shows what’s coming and sets a reminder by hand', async ({ page }) => {
+    page.memento.upcoming = [{ id: 'u1', text: 'Take out the trash', due_at: new Date(Date.now() + 3600_000).toISOString(), lock_seconds: 180, status: 'pending', snoozes: 0 }];
+    await page.goto('/memento');
+    await expect(page.getByText('Take out the trash')).toBeVisible();
+    await expect(page.getByText(/locks 3 min/)).toBeVisible();
+    await page.getByRole('textbox', { name: 'Reminder' }).fill('Water the plants');
+    await page.getByLabel('Minutes from now').fill('25');
+    await page.getByLabel('Lock minutes').fill('2');
+    await page.getByRole('button', { name: 'Set reminder' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Reminder set' })).toBeVisible();
+    expect(page.mementoCalls.at(-1).body).toEqual({ text: 'Water the plants', in_minutes: 25, lock_seconds: 120 });
   });
 });

@@ -8,6 +8,7 @@ A set of apps custom-built for one person. Each app does one job and stands on i
 |---|---|---|---|---|
 | **Me** | Dashboard: tasks, Google Calendar, notes, training | Web, iPhone home screen, Mac | repo root | Coral |
 | **MeReader** | Reads any EPUB and turns it into an audiobook, with one shared place | iPhone, Mac | [`MeReader/`](MeReader/) | Blue |
+| **MeMento** | Reminders that flash and lock your screens until you’ve done the thing | Mac (menu bar), iPhone through Me | [`MeMento/`](MeMento/) | Amber |
 
 ## Separate
 
@@ -17,7 +18,7 @@ A set of apps custom-built for one person. Each app does one job and stands on i
 
 ## Connected
 
-- **One identity:** every icon is the same "Me" lettering in the same place, with the app's own color and a symbol underneath (a book for MeReader). The apps use the same dark palette; only the accent color differs.
+- **One identity:** every icon is the same "Me" lettering in the same place, with the app's own color and a symbol underneath (a book for MeReader, a bell for MeMento). The apps use the same dark palette; only the accent color differs.
 - **One owner, both devices:** each app syncs between the Mac and the iPhone.
 - **One way in for Claude:** the Me dashboard has a Claude connector, so tasks, calendar, notes and training can be read and changed from a chat.
 - **Not yet:** the apps don't read each other's data. Links between them (for example a task that opens a book, or listening time showing up on the dashboard) are the next step, and should go through the dashboard's API rather than shared files.

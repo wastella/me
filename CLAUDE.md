@@ -4,11 +4,12 @@ This repository (GitHub: `wastella/mesuite`, local folder `~/Developer/Me`) hold
 
 - **Me** (the repo root): the web dashboard. Everything from "Me (the dashboard)" down is about it.
 - **MeReader** (`MeReader/`): native SwiftUI EPUB reader and audiobook app for iPhone and Mac (formerly Narrate). Not part of the website: it's in `.vercelignore`, has no server, and is built with Xcode. Read `MeReader/CLAUDE.md` before working in it.
+- **MeMento** (`MeMento/`): reminders that flash and lock the Macs until the job is done. The folder is a small native Mac menu-bar app; the reminders themselves live in the dashboard (`lib/memento.js`, `/api/memento`, the `/memento` page and overlay, connector tools `set_reminder` / `list_reminders` / `cancel_reminder`). Read `MeMento/CLAUDE.md` before working on either half.
 
 Suite rules:
 
 - A new app gets a top-level folder `Me<Name>/` with its own `CLAUDE.md` and `README.md`; list it here and in the README table, and add it to `.vercelignore` unless it is part of the website.
-- Icons: the Me icon's exact "Me" lettering, the app's own color, and a symbol underneath (see `MeReader/tools/make-icon.sh`). Colors so far: Me coral, MeReader blue. UI uses the dashboard's dark palette with the app's color as accent.
+- Icons: the Me icon's exact "Me" lettering, the app's own color, and a symbol underneath (see `MeReader/tools/make-icon.sh`). Colors so far: Me coral, MeReader blue, MeMento amber. UI uses the dashboard's dark palette with the app's color as accent.
 - Apps don't read each other's files or databases. When two apps need to share something, go through the dashboard's API (or its Claude connector), and document the link in both apps.
 - Work in one app shouldn't change another. Commit messages start with the app's name (`MeReader: …`, or the dashboard area such as `Calendar: …`).
 
