@@ -68,7 +68,8 @@ struct MenuBarPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("MeReader").font(.headline)
+                MeMark(size: 22)
+                Text("Reader").font(.system(size: 15, weight: .semibold)).tracking(-0.3)
                 Spacer()
                 SyncPill { MacAppDelegate.showLibrary(openWindow) }
             }

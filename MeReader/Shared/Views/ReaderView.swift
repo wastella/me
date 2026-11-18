@@ -104,7 +104,7 @@ struct ReaderView: View {
                                 .font(.subheadline.weight(.semibold))
                                 .padding(.horizontal, 16).padding(.vertical, 9)
                                 .background(Palette.accent, in: Capsule())
-                                .foregroundStyle(.black)
+                                .foregroundStyle(.white)
                                 .shadow(color: .black.opacity(0.3), radius: 10, y: 4)
                         }
                         .buttonStyle(PressableStyle())

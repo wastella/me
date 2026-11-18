@@ -42,7 +42,7 @@ struct MiniPlayer: View {
                             .contentTransition(.symbolEffect(.replace))
                             .frame(width: 44, height: 44)
                             .background(Palette.accent, in: Circle())
-                            .foregroundStyle(.black)
+                            .foregroundStyle(.white)
                     }
                     .buttonStyle(PressableStyle())
                     .keyboardShortcut(.space, modifiers: [])
@@ -215,10 +215,10 @@ struct NowPlayingView: View {
                     Circle().fill(Palette.accent).frame(width: 84, height: 84)
                         .shadow(color: Palette.accent.opacity(playing ? 0.5 : 0.2), radius: playing ? 24 : 10)
                     if isThis && narrator.isBuffering {
-                        ProgressView().tint(.black)
+                        ProgressView().tint(.white)
                     } else {
                         Image(systemName: playing ? "pause.fill" : "play.fill")
-                            .font(.system(size: 34, weight: .bold)).foregroundStyle(.black)
+                            .font(.system(size: 34, weight: .bold)).foregroundStyle(.white)
                             .contentTransition(.symbolEffect(.replace))
                             .offset(x: playing ? 0 : 2)
                     }

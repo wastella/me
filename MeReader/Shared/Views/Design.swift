@@ -4,18 +4,39 @@ import UIKit
 import UniformTypeIdentifiers
 #endif
 
-/// Dark-first palette used everywhere except the reader page itself (which follows its theme).
+/// The Me suite's dark palette: the same values as the dashboard's dark theme
+/// (`app/globals.css` tokens at the repo root). Change them there and here together.
 enum Palette {
-    static let bg = Color(red: 0.035, green: 0.035, blue: 0.045)
-    static let surface = Color(red: 0.085, green: 0.085, blue: 0.10)
-    static let surfaceHi = Color(red: 0.13, green: 0.13, blue: 0.15)
-    static let stroke = Color.white.opacity(0.07)
-    static let text = Color(red: 0.93, green: 0.93, blue: 0.95)
-    static let secondary = Color.white.opacity(0.56)
-    static let tertiary = Color.white.opacity(0.32)
-    static let accent = Color(red: 0.98, green: 0.66, blue: 0.28)
-    static let live = Color(red: 0.35, green: 0.87, blue: 0.62)
-    static let warn = Color(red: 1.0, green: 0.6, blue: 0.3)
+    static let bg = Color(hex: 0x0c0c0d)          // --bg
+    static let surface = Color(hex: 0x141416)     // --panel
+    static let surfaceHi = Color(hex: 0x1c1c1f)   // --panel-2
+    static let stroke = Color(hex: 0x222226)      // --line
+    static let text = Color(hex: 0xececee)        // --text
+    static let secondary = Color(hex: 0x9c9ca4)   // --muted
+    static let tertiary = Color(hex: 0x74747c)    // --faint
+    static let accent = Color(hex: 0xee6a4d)      // --accent (Me coral)
+    static let live = Color(hex: 0x56bd87)        // --ok
+    static let warn = Color(hex: 0xe0a23c)        // --warn
+}
+
+extension Color {
+    init(hex: UInt32) {
+        self.init(red: Double((hex >> 16) & 0xff) / 255, green: Double((hex >> 8) & 0xff) / 255, blue: Double(hex & 0xff) / 255)
+    }
+}
+
+/// The Me mark, as in the dashboard's sidebar: a coral rounded square with "Me".
+struct MeMark: View {
+    var size: CGFloat = 24
+    var body: some View {
+        Text("Me")
+            .font(.system(size: size * 0.46, weight: .bold))
+            .tracking(-size * 0.01)
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(Palette.accent, in: RoundedRectangle(cornerRadius: size * 0.29, style: .continuous))
+            .accessibilityHidden(true)
+    }
 }
 
 /// The book's cover, blurred into a dark ambient glow. Used behind the hero card and player.
@@ -259,7 +280,7 @@ struct SyncDetailView: View {
                     Button { Task { await app.syncNow() } } label: {
                         Label("Sync now", systemImage: "arrow.triangle.2.circlepath")
                     }
-                    .buttonStyle(.borderedProminent).tint(Palette.accent).foregroundStyle(.black)
+                    .buttonStyle(.borderedProminent).tint(Palette.accent).foregroundStyle(.white)
                     .disabled(app.isSyncing)
                     Spacer()
                     Menu {
@@ -275,7 +296,7 @@ struct SyncDetailView: View {
                 Button { pickFolder = true } label: {
                     Label("Connect iCloud Drive", systemImage: "icloud").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent).controlSize(.large).tint(Palette.accent).foregroundStyle(.black)
+                .buttonStyle(.borderedProminent).controlSize(.large).tint(Palette.accent).foregroundStyle(.white)
                 Text("Choose **iCloud Drive › Narrate** and tap **Open**. You only do this once.")
                     .font(.footnote).foregroundStyle(Palette.secondary)
             }

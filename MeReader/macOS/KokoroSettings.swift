@@ -77,7 +77,7 @@ struct KokoroSettingsSection: View {
                 Text("\(book.title): \(r.chapters) chapter\(r.chapters == 1 ? "" : "s") ready ahead (\(String(format: "%.1f", r.hours)) h)")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            if let e = renderer.error { Text(e).font(.caption).foregroundStyle(.orange) }
+            if let e = renderer.error { Text(e).font(.caption).foregroundStyle(Palette.warn) }
         }
     }
 

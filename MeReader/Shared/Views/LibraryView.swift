@@ -224,7 +224,7 @@ struct LibraryView: View {
             Button { showImporter = true } label: {
                 Label("Add an EPUB", systemImage: "plus").font(.headline)
                     .padding(.horizontal, 22).padding(.vertical, 14)
-                    .background(Palette.accent, in: Capsule()).foregroundStyle(.black)
+                    .background(Palette.accent, in: Capsule()).foregroundStyle(.white)
             }
             .buttonStyle(PressableStyle())
             if !progress.sync.isConfigured {
@@ -285,7 +285,7 @@ struct HeroCard: View {
                             .contentTransition(.symbolEffect(.replace))
                             .frame(maxWidth: .infinity).padding(.vertical, 11)
                             .background(Palette.accent, in: Capsule())
-                            .foregroundStyle(.black)
+                            .foregroundStyle(.white)
                     }
                     .sensoryFeedback(.impact(weight: .light), trigger: playing)
                 }
@@ -319,7 +319,7 @@ struct BookCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay(alignment: .bottomTrailing) {
                     if narrator.book?.id == book.id && narrator.isPlaying {
-                        LiveBars(active: true, color: .black)
+                        LiveBars(active: true, color: .white)
                             .padding(7).background(Palette.accent, in: Circle()).padding(8)
                     }
                 }

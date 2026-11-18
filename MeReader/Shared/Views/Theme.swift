@@ -9,7 +9,7 @@ enum ReaderTheme: String, CaseIterable, Identifiable {
         switch self {
         case .light: return Color(red: 1, green: 1, blue: 1)
         case .sepia: return Color(red: 0.97, green: 0.93, blue: 0.85)
-        case .dark: return Color(red: 0.12, green: 0.12, blue: 0.13)
+        case .dark: return Palette.surface
         case .black: return .black
         }
     }
@@ -24,8 +24,8 @@ enum ReaderTheme: String, CaseIterable, Identifiable {
     var secondary: Color { text.opacity(0.55) }
     var highlight: Color {
         switch self {
-        case .light, .sepia: return Color(red: 1.0, green: 0.82, blue: 0.35).opacity(0.55)
-        case .dark, .black: return Color(red: 0.95, green: 0.7, blue: 0.2).opacity(0.38)
+        case .light, .sepia: return Color(hex: 0xd9502f).opacity(0.26)
+        case .dark, .black: return Color(hex: 0xee6a4d).opacity(0.42)
         }
     }
     var colorScheme: ColorScheme { self == .light || self == .sepia ? .light : .dark }
