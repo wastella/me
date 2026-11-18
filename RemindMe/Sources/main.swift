@@ -1,16 +1,16 @@
-// MeMento: the Me suite's reminder that you can't ignore. Lives in the menu
+// RemindMe: the Me suite's reminder that you can't ignore (first called MeMento). Lives in the menu
 // bar, asks the Me dashboard every few seconds what should be on screen, and
 // when a reminder fires it flashes and covers every display. While the
 // reminder's lock time runs, the Mac can't be used for anything else.
 //
-//   MeMento --demo 8             lock for 8 seconds with a sample reminder (no server)
-//   MeMento --demo 8 --windowed  the same in an ordinary window
-//   MeMento --demo 8 --windowed --snapshot /tmp/shot   saves shot-locked.png and shot-ask.png
+//   RemindMe --demo 8             lock for 8 seconds with a sample reminder (no server)
+//   RemindMe --demo 8 --windowed  the same in an ordinary window
+//   RemindMe --demo 8 --windowed --snapshot /tmp/shot   saves shot-locked.png and shot-ask.png
 import AppKit
 import SwiftUI
 import ServiceManagement
 
-// MARK: - Look (the dashboard's dark palette, MeMento amber as the accent)
+// MARK: - Look (the dashboard's dark palette, RemindMe amber as the accent)
 enum Look {
     static let bg = Color(red: 0x0c / 255, green: 0x0c / 255, blue: 0x0d / 255)
     static let panel = Color(red: 0x1c / 255, green: 0x1c / 255, blue: 0x1f / 255)
@@ -28,16 +28,21 @@ struct Config: Codable {
     var url = "https://me-omega-green.vercel.app"
     var key = ""
     static var file: URL {
-        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("MeMento")
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = support.appendingPathComponent("RemindMe")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("config.json")
+        let file = dir.appendingPathComponent("config.json")
+        // The app was first called MeMento: carry its key over.
+        let old = support.appendingPathComponent("MeMento/config.json")
+        if !FileManager.default.fileExists(atPath: file.path), FileManager.default.fileExists(atPath: old.path) { try? FileManager.default.copyItem(at: old, to: file) }
+        return file
     }
     static func load() -> Config {
         var c = (try? JSONDecoder().decode(Config.self, from: Data(contentsOf: file))) ?? Config()
-        // For testing against a local copy of Me: MEMENTO_URL / MEMENTO_KEY.
+        // For testing against a local copy of Me: REMINDME_URL / REMINDME_KEY.
         let env = ProcessInfo.processInfo.environment
-        if let u = env["MEMENTO_URL"] { c.url = u }
-        if let k = env["MEMENTO_KEY"] { c.key = k }
+        if let u = env["REMINDME_URL"] { c.url = u }
+        if let k = env["REMINDME_KEY"] { c.key = k }
         return c
     }
     func save() {
@@ -123,7 +128,7 @@ struct LockView: View {
                 HStack(spacing: 10) {
                     Text("Me").font(.system(size: 13, weight: .bold)).foregroundColor(.white)
                         .frame(width: 30, height: 30).background(Look.amber).clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    Text("MeMento").font(.system(size: 17, weight: .semibold)).foregroundColor(model.flash ? .black : Look.text)
+                    Text("RemindMe").font(.system(size: 17, weight: .semibold)).foregroundColor(model.flash ? .black : Look.text)
                     Spacer()
                 }
                 Spacer(minLength: 20)
@@ -303,7 +308,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         lock.windowed = args.contains("--windowed")
 
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(systemSymbolName: "bell.fill", accessibilityDescription: "MeMento")
+        item.button?.image = NSImage(systemSymbolName: "bell.fill", accessibilityDescription: "RemindMe")
         let menu = NSMenu(); menu.delegate = self; item.menu = menu
 
         if let demo {
@@ -348,7 +353,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
-        let head = NSMenuItem(title: "MeMento · \(status)", action: nil, keyEquivalent: ""); head.isEnabled = false
+        let head = NSMenuItem(title: "RemindMe · \(status)", action: nil, keyEquivalent: ""); head.isEnabled = false
         menu.addItem(head)
         menu.addItem(.separator())
         if upcoming.isEmpty {
@@ -370,7 +375,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(login)
         menu.addItem(withTitle: "Set Key…", action: #selector(askForKey), keyEquivalent: "").target = self
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit MeMento", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.addItem(withTitle: "Quit RemindMe", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
     }
 
     @objc func testFlash() {
@@ -381,15 +386,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     @objc func toggleLogin() {
         do { if SMAppService.mainApp.status == .enabled { try SMAppService.mainApp.unregister() } else { try SMAppService.mainApp.register() } }
-        catch { let a = NSAlert(); a.messageText = "Couldn’t change Open at Login"; a.informativeText = "Add MeMento yourself in System Settings → General → Login Items."; a.runModal() }
+        catch { let a = NSAlert(); a.messageText = "Couldn’t change Open at Login"; a.informativeText = "Add RemindMe yourself in System Settings → General → Login Items."; a.runModal() }
     }
     @objc func askForKey() {
         NSApp.activate(ignoringOtherApps: true)
         let a = NSAlert()
-        a.messageText = "Connect MeMento to Me"
-        a.informativeText = "In Me, open Settings → MeMento, copy the key, and paste it here. It’s stored only on this Mac."
+        a.messageText = "Connect RemindMe to Me"
+        a.informativeText = "In Me, open Settings → RemindMe, copy the key, and paste it here. It’s stored only on this Mac."
         let field = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
-        field.placeholderString = "MeMento key"
+        field.placeholderString = "RemindMe key"
         a.accessoryView = field
         a.addButton(withTitle: "Connect"); a.addButton(withTitle: "Cancel")
         a.window.initialFirstResponder = field

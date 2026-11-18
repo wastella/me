@@ -1,7 +1,7 @@
 'use client';
-// MeMento inside the Me web app (this is what the phone gets): when a
+// RemindMe inside the Me web app (this is what the phone gets): when a
 // reminder fires, it covers the whole app and can't be dismissed until its
-// lock time is up. The Macs get a real screen lock from the MeMento app.
+// lock time is up. The Macs get a real screen lock from the RemindMe app.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { api } from '@/lib/client';
@@ -67,7 +67,7 @@ export default function MementoOverlay() {
   return (
     <div className="memento" role="alertdialog" aria-modal="true" aria-label={`Reminder: ${m.text}`} key={key}>
       <div className="memento-flash" aria-hidden="true" />
-      <div className="memento-brand"><span className="memento-mark">Me</span>MeMento</div>
+      <div className="memento-brand"><span className="memento-mark">Me</span>RemindMe</div>
       <div className="memento-main">
         <h1>{m.text}</h1>
         {locked ? (

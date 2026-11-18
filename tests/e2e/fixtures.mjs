@@ -42,7 +42,7 @@ export const test = base.extend({
       return r.fulfill({ json: EVENTS });
     });
     await page.route('**/api/meals**', (r) => r.fulfill({ json: { connected: true, name: 'Meals', meals: MEALS } }));
-    // MeMento: nothing on screen unless a test sets page.memento = { active, upcoming, recent }.
+    // RemindMe: nothing on screen unless a test sets page.memento = { active, upcoming, recent }.
     page.memento = { active: [], upcoming: [], recent: [] };
     page.mementoCalls = [];
     await page.route('**/api/memento**', (r) => {

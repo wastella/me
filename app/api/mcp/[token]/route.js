@@ -264,8 +264,8 @@ const handler = createMcpHandler((server) => {
 
   const whenText = (iso) => `${localDate(iso)} ${localTime(iso)}`;
   server.registerTool('set_reminder', {
-    title: 'Set reminder (MeMento)',
-    description: "Set a MeMento reminder. When it goes off, the user's Mac screens flash and show it full-screen (and their phone is notified), so they can't miss it. lock_minutes is how long the screens stay locked on the reminder: YOU choose it, as a realistic time to get up and actually do the thing, so they can't just dismiss it and keep working. Guide: a quick physical chore (move the laundry, take out the trash, take a pill, feed the dog) 3–5; a longer one (fold laundry, shower, tidy the room, walk the dog) 10–20; something that isn't done at home right then, or just a heads-up (leave for school, call someone, an idea to remember) 0–1. Use 0 for a flash with no lock. Never more than 60. During the lock they cannot dismiss it; afterwards they answer Done or Not yet (it returns in 10 minutes). Give either in_minutes, or date + time in the user's timezone. Tell the user the time and the lock length you chose.",
+    title: 'Set reminder (RemindMe)',
+    description: "Set a RemindMe reminder. When it goes off, the user's Mac screens flash and show it full-screen (and their phone is notified), so they can't miss it. lock_minutes is how long the screens stay locked on the reminder: YOU choose it, as a realistic time to get up and actually do the thing, so they can't just dismiss it and keep working. Guide: a quick physical chore (move the laundry, take out the trash, take a pill, feed the dog) 3–5; a longer one (fold laundry, shower, tidy the room, walk the dog) 10–20; something that isn't done at home right then, or just a heads-up (leave for school, call someone, an idea to remember) 0–1. Use 0 for a flash with no lock. Never more than 60. During the lock they cannot dismiss it; afterwards they answer Done or Not yet (it returns in 10 minutes). Give either in_minutes, or date + time in the user's timezone. Tell the user the time and the lock length you chose.",
     inputSchema: z.object({
       text: z.string().min(1).max(200).describe('What to do, as a short instruction: "Move the laundry to the dryer"'),
       in_minutes: z.number().min(0).max(60 * 24 * 60).optional(),
@@ -281,7 +281,7 @@ const handler = createMcpHandler((server) => {
   });
 
   server.registerTool('list_reminders', {
-    title: 'Reminders (MeMento)', description: 'MeMento reminders: ones on screen now, upcoming ones, and how recent ones ended (done, skipped = the user used the emergency exit, missed = never answered).',
+    title: 'Reminders (RemindMe)', description: 'RemindMe reminders: ones on screen now, upcoming ones, and how recent ones ended (done, skipped = the user used the emergency exit, missed = never answered).',
     inputSchema: z.object({}),
   }, async () => {
     const s = await mementoState();
@@ -290,7 +290,7 @@ const handler = createMcpHandler((server) => {
   });
 
   server.registerTool('cancel_reminder', {
-    title: 'Cancel reminder (MeMento)', description: 'Cancel a MeMento reminder that has not gone off yet (id from list_reminders). One that is already on screen cannot be cancelled: the user has to answer it. Confirm with the user first.',
+    title: 'Cancel reminder (RemindMe)', description: 'Cancel a RemindMe reminder that has not gone off yet (id from list_reminders). One that is already on screen cannot be cancelled: the user has to answer it. Confirm with the user first.',
     inputSchema: z.object({ id: z.string().min(1) }),
   }, async ({ id }) => { try { await cancelMemento(id); return text('Cancelled.'); } catch (e) { return fail(e.message); } });
 

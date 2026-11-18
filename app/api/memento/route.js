@@ -1,4 +1,4 @@
-// MeMento for the signed-in web app (the phone's home-screen app).
+// RemindMe for the signed-in web app (the phone's home-screen app).
 import { handle, json, body } from '@/lib/http';
 import { tick, recent, create, answer, cancel } from '@/lib/memento';
 export const dynamic = 'force-dynamic';

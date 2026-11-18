@@ -727,7 +727,7 @@ html.desktop .sheet.drawer .sheet-head { padding-top: 38px; }
 }
 @media (max-width: 760px) { .cal-tools > .spin { display: none; } .reminder select.input:first-child { flex: 1.5; } }
 
-/* MeMento: the reminder that covers everything (amber is its colour in the suite) */
+/* RemindMe: the reminder that covers everything (amber is its colour in the suite) */
 body.memento-open { overflow: hidden; }
 .memento { --amber: #f2a91e; position: fixed; inset: 0; z-index: 1000; background: #0c0c0d; color: #ececee; display: flex; flex-direction: column; padding: max(22px, env(safe-area-inset-top)) 24px max(22px, env(safe-area-inset-bottom)); -webkit-app-region: no-drag; overscroll-behavior: contain; touch-action: none; }
 .memento-flash { position: absolute; inset: 0; background: var(--amber); opacity: 0; pointer-events: none; animation: memento-flash .9s ease-out 3; }

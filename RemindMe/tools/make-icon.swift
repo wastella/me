@@ -1,9 +1,9 @@
-// Draws the MeMento icon from the Me icon itself (../build/icon.png), so the "Me" lettering is
+// Draws the RemindMe icon from the Me icon itself (../build/icon.png), so the "Me" lettering is
 // pixel-for-pixel the same and sits in the same place. Only the background color changes, and a
 // bell is added underneath. Run tools/make-icon.sh (it also rebuilds the .icns).
 import AppKit
 
-let background = (r: 0xd9, g: 0x8a, b: 0x06)   // MeMento amber
+let background = (r: 0xd9, g: 0x8a, b: 0x06)   // RemindMe amber
 let meCoral = (r: 0xd1, g: 0x49, b: 0x2e)      // background of the Me icon
 
 let src = NSBitmapImageRep(data: try! Data(contentsOf: URL(fileURLWithPath: "../build/icon.png")))!

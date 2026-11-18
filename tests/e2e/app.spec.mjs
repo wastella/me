@@ -1,6 +1,6 @@
 import { test, expect, unique, quickAdd, addTask, row, localDate } from './fixtures.mjs';
 
-const PAGES = [['/', 'Home'], ['/tasks', 'Tasks'], ['/tasks?view=upcoming', 'Upcoming'], ['/tasks?view=done', 'Completed'], ['/calendar', 'Calendar'], ['/notes', 'Notes'], ['/training', 'Training'], ['/memento', 'MeMento'], ['/settings', 'Settings']];
+const PAGES = [['/', 'Home'], ['/tasks', 'Tasks'], ['/tasks?view=upcoming', 'Upcoming'], ['/tasks?view=done', 'Completed'], ['/calendar', 'Calendar'], ['/notes', 'Notes'], ['/training', 'Training'], ['/remindme', 'RemindMe'], ['/settings', 'Settings']];
 
 test.describe('every screen', () => {
   for (const [path, name] of PAGES) {
@@ -570,7 +570,7 @@ test.describe('dialogs', () => {
   });
 });
 
-test.describe('MeMento', () => {
+test.describe('RemindMe', () => {
   const firing = (lockMs) => { const fired = new Date(); return { id: 'm1', text: 'Move the laundry', due_at: fired.toISOString(), lock_seconds: 240, status: 'firing', snoozes: 0, fired_at: fired.toISOString(), lock_until: new Date(fired.getTime() + lockMs).toISOString(), locked: lockMs > 0 }; };
 
   test('a firing reminder covers the app and can’t be dismissed while locked', async ({ page }) => {
@@ -600,7 +600,7 @@ test.describe('MeMento', () => {
 
   test('the list shows what’s coming and sets a reminder by hand', async ({ page }) => {
     page.memento.upcoming = [{ id: 'u1', text: 'Take out the trash', due_at: new Date(Date.now() + 3600_000).toISOString(), lock_seconds: 180, status: 'pending', snoozes: 0 }];
-    await page.goto('/memento');
+    await page.goto('/remindme');
     await expect(page.getByText('Take out the trash')).toBeVisible();
     await expect(page.getByText(/locks 3 min/)).toBeVisible();
     await page.getByRole('textbox', { name: 'Reminder' }).fill('Water the plants');

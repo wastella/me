@@ -1,5 +1,5 @@
 'use client';
-// MeMento's list: what's coming up, how recent reminders ended, and a way to
+// RemindMe's list: what's coming up, how recent reminders ended, and a way to
 // set one by hand. (Mostly you'll just ask Claude.)
 import { useState } from 'react';
 import { useApp } from '@/components/AppProvider';
@@ -34,7 +34,7 @@ export default function MementoPage() {
 
   return (
     <>
-      <div className="page-head"><div><h1>MeMento</h1><div className="sub">Reminders that take over your screens until you’ve gone and done the thing.</div></div></div>
+      <div className="page-head"><div><h1>RemindMe</h1><div className="sub">Reminders that take over your screens until you’ve gone and done the thing.</div></div></div>
       <div className="stack memento-page">
         <section className="card" aria-labelledby="mm-new">
           <div className="card-head"><h2 id="mm-new">New reminder</h2></div>

@@ -1,4 +1,4 @@
-// MeMento for the Mac menu-bar app: "Authorization: Bearer <MeMento key>"
+// RemindMe for the Mac menu-bar app: "Authorization: Bearer <RemindMe key>"
 // (shown in Settings). GET says what should be on screen; POST answers it.
 import { NextResponse } from 'next/server';
 import { tick, answer } from '@/lib/memento';
