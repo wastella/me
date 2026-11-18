@@ -19,13 +19,14 @@ New apps: add a folder `Me<Name>/`, list it here, and add it to `.vercelignore` 
 
 ## Layout
 
-- `app/` pages: `/` Home (today's schedule and tasks), `/tasks`, `/calendar` (Day/Week/Month; keys D/W/M, T = today), `/notes`, `/training`, `/settings`, `/login`.
+- `app/` pages: `/` Home (today's schedule and tasks), `/tasks`, `/calendar` (Day/Week/Month/Schedule; keys D/W/M/A, T = today, C = new event, / = search), `/notes`, `/training`, `/settings`, `/login`.
 - `components/ui.js`: shared building blocks. `Sheet` (modal on a computer, drawer for task details, bottom sheet on a phone; traps focus, Esc closes), `useDialog()` for `confirm`/`prompt` (never use the browser's own `confirm()`/`prompt()`), `Popover` menus, `Segmented`, `Skeleton`, `Empty`, `LoadError`. Changes go through `attempt()` from `useApp()`, which shows an error toast and reloads if saving fails.
 - `app/globals.css` is one organized stylesheet (tokens first, phone rules near the end). Reuse its classes; avoid inline styles.
 - `app/api/*` route handlers wrap logic in `lib/`, using `handle`/`json`/`body` from `lib/http.js`. Client code calls them through `api()`/`useApi()` in `lib/client.js`.
 - `lib/projects.js`: projects and sections (Misc can't be renamed or deleted).
 - `lib/tasks.js`: tasks, quick-add (`lib/quickadd.js`, chrono-node), recurrence (`lib/dates.js`). There is no "overdue": unfinished past tasks roll to the top of today (`rollover`). Order within a day is `day_order`, changed by drag (pointer events in `components/AppProvider.js`, long-press on touch). Projects replace labels; the inbox project is called "Misc".
-- `lib/google.js`: OAuth plus Calendar (list, create, delete events). Gmail helpers still exist but the Mail UI was removed on purpose.
+- `lib/google.js`: OAuth plus the full Calendar client: list/search events, one event in full (`getEvent`, with its repeat rule), create/update/delete with `scope` for repeating events (`this` | `following` | `all`; "following" splits the series), guests and RSVP (`respondToEvent`), Meet links, reminders, colours, moving between calendars, and creating/renaming/recolouring/removing calendars. `lib/rrule.js` reads, builds and describes repeat rules. Gmail helpers still exist but the Mail UI was removed on purpose.
+- Calendar UI: `app/calendar/page.js` (Day/Week/Month/Schedule views, search, drag to move or resize, drag out a new slot) with `components/calendar/` (`EventForm` full editor, `EventSheet` details + RSVP, `Calendars` manager, `Scope` this/following/all dialog). The editor sends only the fields that changed. Not covered because Google's API doesn't offer them or they need Workspace: appointment schedules, out-of-office/focus time, working location, attachments, per-event time zones.
 - `lib/notes.js`: notes and note categories (`category_id` NULL = Unsorted). Typing only: voice dictation was tried and removed at the owner's request, so don't add it back.
 - `lib/meals.js` + `lib/ics.js`: dinners from Mealboard (the meal-planning app William's mom uses). Mealboard has no API, so it exports into an iCloud calendar that William shares as a public link (pasted into Settings → Meals, stored in kv `meals_feed`). Me reads that link (cached 10 min); it's read-only. Shown only on the Calendar tab (the owner doesn't want meals on Home), on any timed calendar event titled Supper/Dinner (`withMeals` adds `meal` in the events API and in the connector's `get_calendar`), and through the connector's `get_meals` tool.
 - `lib/training.js`: upper/lower lifting split on alternating days, plus a daily posture routine. A single daily P1 "Workout" task covers lifting.
@@ -38,7 +39,7 @@ New apps: add a folder `Me<Name>/`, list it here, and add it to `.vercelignore` 
 ## Workflow
 
 - Local: `npm run build && npm start` (or `npm run dev`) on http://localhost:3737. A local run uses `data/me.db`, not the real Turso data, so test there freely. The preview config is in `.claude/launch.json` (name `me`).
-- Tests: `npm test` runs the logic tests in `tests/*.test.mjs` (dates, quick-add, tasks, projects, notes, meals, training, sign-in) against a throwaway database. `npm run test:e2e` builds the app and clicks through every screen at desktop and phone size with Playwright (`tests/e2e`; first time: `npx playwright install chromium`). Stop any local server on port 3737 first. Add or update tests with every change, and run both before deploying.
+- Tests: `npm test` runs the logic tests in `tests/*.test.mjs` (dates, quick-add, tasks, projects, notes, meals, calendar, training, sign-in) against a throwaway database. `npm run test:e2e` builds the app and clicks through every screen at desktop and phone size with Playwright (`tests/e2e`; first time: `npx playwright install chromium`). Stop any local server on port 3737 first. Add or update tests with every change, and run both before deploying.
 - `npm run seed` fills an empty local database with sample data.
 - Check UI changes in the browser at desktop width and at phone width (375px), with no horizontal overflow.
 - Deploy: `npx --yes vercel@65.12.1 deploy --prod --yes`.

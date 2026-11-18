@@ -635,3 +635,94 @@ html.desktop .sheet.drawer .sheet-head { padding-top: 38px; }
 
 /* The night's meal on a Supper/Dinner event */
 .ev-block .ev-meal { color: inherit; font-weight: 500; }
+
+/* Calendar: editor, details, schedule, search, dragging */
+.field-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 10px; font-size: 13.5px; color: var(--muted); }
+.field-row .input { color: var(--text); }
+.repeat-box { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13.5px; color: var(--muted); }
+.repeat-box .input:not(.num) { width: auto; flex: 0 1 auto; }
+.repeat-box .input { color: var(--text); }
+.daypick { display: flex; gap: 6px; }
+.daypick button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line-2); background: transparent; font-size: 12px; font-weight: 600; color: var(--muted); }
+.daypick button[aria-pressed="true"] { background: var(--text); border-color: var(--text); color: var(--bg); }
+.swatches { display: flex; flex-wrap: wrap; gap: 7px; }
+.sw { width: 20px; height: 20px; border-radius: 50%; border: 0; background: var(--c, var(--faint)); padding: 0; cursor: pointer; transition: transform var(--fast); }
+.sw:hover { transform: scale(1.12); }
+.sw[aria-checked="true"], .sw[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--c, var(--faint)); }
+.sw.auto { background: conic-gradient(var(--c, var(--faint)) 0 50%, var(--panel-3, var(--panel-2)) 0); outline: 1px solid var(--line-2); }
+.chip.guest { height: 26px; color: var(--text); padding-right: 4px; }
+.chip.guest button { width: 18px; height: 18px; border: 0; border-radius: 50%; background: transparent; color: var(--faint); display: grid; place-items: center; padding: 0; }
+.chip.guest button:hover { color: var(--text); background: var(--panel-2); }
+.chip.guest svg { width: 11px; height: 11px; }
+.reminder select.input { width: auto; flex: 1; }
+.sheet-head h2 .ev-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 9px; }
+.ev-when a { color: inherit; text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+.ev-when svg { color: var(--faint); }
+.ev-desc { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; color: var(--muted); max-height: 220px; overflow: auto; }
+.ev-desc a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.ev-actions { margin-top: 4px; }
+.guests ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; max-height: 190px; overflow: auto; }
+.guests li { display: flex; align-items: center; gap: 8px; font-size: 13.5px; min-width: 0; }
+.guests li span:first-of-type { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.guests li span:last-child { margin-left: auto; white-space: nowrap; }
+.rsvp { width: 8px; height: 8px; border-radius: 50%; flex: none; border: 1.5px solid var(--faint); }
+.rsvp.accepted { background: var(--ok); border-color: var(--ok); }
+.rsvp.declined { background: var(--danger); border-color: var(--danger); }
+.rsvp.tentative { background: var(--faint); }
+.cal-manage { list-style: none; margin: 0; padding: 0; }
+.cal-manage li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cal-manage .check-row { min-width: 0; flex: 1; }
+.cal-manage .check-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-manage input { accent-color: var(--c, var(--text)); }
+.cal-search { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.cal-search > svg { width: 16px; height: 16px; color: var(--faint); flex: none; }
+.icon-btn.on { background: var(--panel-2); color: var(--text); }
+
+.agenda-card { padding: 4px 16px; }
+.agenda-days { list-style: none; margin: 0; padding: 0; }
+.agenda-days > li { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.agenda-days > li:last-child { border-bottom: 0; }
+.agenda-days > li.past { opacity: .6; }
+.agenda-date { display: flex; align-items: baseline; gap: 7px; border: 0; background: transparent; padding: 4px 0; text-align: left; color: inherit; }
+.agenda-date:not(:disabled) { cursor: pointer; }
+.agenda-date b { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 22px; }
+.agenda-date span { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); font-weight: 600; white-space: nowrap; }
+.agenda-days > li.today .agenda-date b, .agenda-days > li.today .agenda-date span { color: var(--accent); }
+.agenda-items { display: flex; flex-direction: column; min-width: 0; }
+.agenda-ev { display: grid; grid-template-columns: 8px 124px minmax(0, 1fr) minmax(0, auto); gap: 10px; align-items: center; border: 0; background: transparent; padding: 6px 8px; border-radius: 8px; text-align: left; font-size: 13.5px; min-width: 0; color: inherit; cursor: pointer; }
+.agenda-ev:hover { background: var(--panel-2); }
+.agenda-ev i { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--faint)); }
+.agenda-ev.task i { background: transparent; border: 1.3px solid var(--faint); }
+.agenda-ev .t { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.agenda-ev .lbl { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agenda-ev .lbl svg { width: 11px; height: 11px; margin-left: 6px; color: var(--faint); vertical-align: -1px; }
+.agenda-ev .loc { color: var(--faint); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+
+.ev-block.can-move { cursor: grab; touch-action: pan-y; }
+.ev-block.moving { opacity: .85; z-index: 5; cursor: grabbing; box-shadow: 0 6px 18px rgba(0, 0, 0, .35); transition: none; }
+.ev-block.unanswered { background: transparent; color: var(--text); box-shadow: inset 0 0 0 1.5px var(--c); }
+.ev-block.unanswered span { color: var(--muted); }
+.ev-block .ev-resize { position: absolute; left: 0; right: 0; bottom: 0; height: 7px; cursor: ns-resize; }
+.mcell.drop { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+@media (max-width: 760px) {
+  .field-row { grid-template-columns: 84px minmax(0, 1fr); }
+  .agenda-card { padding: 2px 10px; }
+  .agenda-days > li { grid-template-columns: 58px minmax(0, 1fr); gap: 6px; }
+  .agenda-ev { grid-template-columns: 8px minmax(0, 1fr); row-gap: 1px; padding: 7px 6px; }
+  .agenda-ev .t { grid-column: 2; grid-row: 2; font-size: 12px; }
+  .agenda-ev .lbl { grid-column: 2; grid-row: 1; }
+  .agenda-ev .loc { display: none; }
+  .cal-tools .seg button { padding: 0 6px; font-size: 12.5px; }
+  .repeat-box .row.nowrap { flex-wrap: wrap; }
+  .sw { width: 24px; height: 24px; }
+}
+/* Long forms scroll inside the sheet instead of squashing their fields. */
+.sheet-body > *, .sheet-body > form > * { flex-shrink: 0; }
+@media (max-width: 760px) {
+  .cal-head, .cal-title, .cal-tools { min-width: 0; max-width: 100%; }
+  .cal-tools { position: relative; gap: 4px; }
+  .cal-tools .seg { min-width: 0; }
+  .cal-tools .seg button { min-width: 0; padding: 0 4px; }
+  .cal-tools > .spin { position: absolute; right: 4px; top: -30px; }
+}
+@media (max-width: 760px) { .cal-tools > .spin { display: none; } .reminder select.input:first-child { flex: 1.5; } }

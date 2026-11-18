@@ -306,6 +306,150 @@ test.describe('calendar', () => {
     await expect(form.getByLabel('End time')).toHaveValue('10:00');
   });
 
+  test('full editor: repeat, guests, reminders, colour and a video call', async ({ page }) => {
+    await page.goto('/calendar');
+    await page.getByRole('button', { name: 'New event' }).click();
+    const form = page.getByRole('dialog', { name: 'New event' });
+    await form.getByRole('textbox', { name: 'Title' }).fill('Study group');
+    await form.getByLabel('Repeat', { exact: true }).selectOption('daily');
+    await form.getByRole('button', { name: 'More options' }).click();
+    await form.getByRole('textbox', { name: 'Add guests' }).fill('not-an-email');
+    await form.getByRole('button', { name: 'Add', exact: true }).click();
+    await expect(form.getByText('doesn’t look like an email')).toBeVisible();
+    await form.getByRole('textbox', { name: 'Add guests' }).fill('sam@example.com');
+    await form.getByRole('button', { name: 'Add', exact: true }).click();
+    await expect(form.getByRole('button', { name: 'Remove sam@example.com' })).toBeVisible();
+    await form.getByLabel('Google Meet video call').check();
+    await form.getByRole('textbox', { name: 'Description' }).fill('Bring notes');
+    await form.getByLabel('Use my calendar’s usual reminders').uncheck();
+    await form.getByLabel('Reminder amount').fill('2');
+    await form.getByLabel('Reminder unit').selectOption('hours');
+    await form.getByRole('radio', { name: 'Peacock' }).click();
+    await form.getByLabel('Show me as').selectOption('free');
+    await form.getByRole('button', { name: 'Add event' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Added “Study group”' })).toBeVisible();
+    const { method, body } = page.calendarCalls.at(-1);
+    expect(method).toBe('POST');
+    expect(body).toMatchObject({ title: 'Study group', repeat: 'RRULE:FREQ=DAILY', guests: ['sam@example.com'], notify: true, meet: true, description: 'Bring notes', colorId: '7', busy: false, calendarId: 'primary', allDay: false, reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 120 }] } });
+  });
+
+  test('custom repeat: every 2 weeks on chosen days, a set number of times', async ({ page }) => {
+    await page.goto('/calendar');
+    await page.getByRole('button', { name: 'New event' }).click();
+    const form = page.getByRole('dialog', { name: 'New event' });
+    await form.getByRole('textbox', { name: 'Title' }).fill('Practice');
+    await form.getByLabel('Date', { exact: true }).fill('2026-11-17');   // a Tuesday
+    await form.getByLabel('Repeat', { exact: true }).selectOption('custom');
+    await form.getByLabel('Repeat every').fill('2');
+    await form.getByRole('button', { name: 'Thursday' }).click();
+    await form.getByLabel('Ends').selectOption('count');
+    await form.getByLabel('Number of times').fill('6');
+    await form.getByRole('button', { name: 'Add event' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Added “Practice”' })).toBeVisible();
+    expect(page.calendarCalls.at(-1).body.repeat).toBe('RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;COUNT=6');
+  });
+
+  test('a repeating event asks how far a change or delete should reach', async ({ page }) => {
+    await page.goto('/calendar');
+    await page.getByRole('button', { name: /Supper/ }).first().click();
+    const details = page.getByRole('dialog', { name: 'Supper' });
+    await expect(details.getByText('Daily')).toBeVisible();
+    await details.getByRole('button', { name: 'Edit' }).click();
+    const edit = page.getByRole('dialog', { name: 'Edit event' });
+    await expect(edit.getByLabel('Repeat', { exact: true })).toHaveValue('daily');
+    await edit.getByRole('textbox', { name: 'Title' }).fill('Family supper');
+    await edit.getByRole('button', { name: 'Save' }).click();
+    const ask = page.getByRole('dialog', { name: 'Change repeating event' });
+    await ask.getByRole('radio', { name: 'All events' }).check();
+    await ask.getByRole('button', { name: 'OK' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Event updated' })).toBeVisible();
+    expect(page.calendarCalls.at(-1)).toMatchObject({ method: 'PATCH', body: { id: 'e2', calendarId: 'primary', title: 'Family supper', scope: 'all' } });
+    expect(page.calendarCalls.at(-1).body.start, 'only the title was sent').toBeUndefined();
+
+    await page.getByRole('button', { name: /Supper/ }).first().click();
+    await page.getByRole('dialog', { name: 'Supper' }).getByRole('button', { name: 'Delete' }).click();
+    const del = page.getByRole('dialog', { name: 'Delete repeating event' });
+    await del.getByRole('radio', { name: 'This and following events' }).check();
+    await del.getByRole('button', { name: 'Delete' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Event deleted' })).toBeVisible();
+    expect(page.calendarCalls.at(-1)).toMatchObject({ method: 'DELETE', query: { id: 'e2', scope: 'following' } });
+  });
+
+  test('invitations: see the guests, reply, and duplicate', async ({ page }) => {
+    await page.goto('/calendar');
+    await page.getByRole('group', { name: 'Calendar view' }).getByRole('button', { name: /Schedule|List/ }).click();
+    await page.getByRole('button', { name: /Club meeting/ }).click();
+    const details = page.getByRole('dialog', { name: 'Club meeting' });
+    await expect(details.getByText('2 guests · 1 going')).toBeVisible();
+    await expect(details.getByText('Sam')).toBeVisible();
+    await expect(details.getByRole('link', { name: 'https://example.com/agenda' })).toBeVisible();
+    await expect(details.getByRole('button', { name: 'Edit' })).toHaveCount(0);   // someone else’s event
+    await details.getByRole('group', { name: 'Your reply' }).getByRole('button', { name: 'Yes' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Replied: going' })).toBeVisible();
+    expect(page.calendarCalls.at(-1).body).toMatchObject({ id: 'e3', rsvp: 'accepted' });
+    await details.getByRole('button', { name: 'Duplicate' }).click();
+    const copy = page.getByRole('dialog', { name: 'New event' });
+    await expect(copy.getByRole('textbox', { name: 'Title' })).toHaveValue('Club meeting');
+    await expect(copy.getByRole('button', { name: 'Remove sam@example.com' })).toBeVisible();
+  });
+
+  test('schedule view and search', async ({ page }) => {
+    await page.goto('/calendar');
+    await page.getByRole('group', { name: 'Calendar view' }).getByRole('button', { name: /Schedule|List/ }).click();
+    const list = page.locator('.agenda-days');
+    await expect(list.getByRole('button', { name: /Dentist/ })).toBeVisible();
+    await expect(list.getByRole('button', { name: /Club meeting/ })).toBeVisible();
+    await page.getByRole('button', { name: 'Search events' }).click();
+    await page.getByRole('searchbox', { name: 'Search events' }).fill('dent');
+    await expect(list.getByRole('button', { name: /Dentist/ })).toBeVisible();
+    await expect(list.getByRole('button', { name: /Club meeting/ })).toHaveCount(0);
+    await page.getByRole('searchbox', { name: 'Search events' }).fill('zzz');
+    await expect(page.getByText('No events match “zzz”.')).toBeVisible();
+    await page.getByRole('button', { name: 'Close search' }).click();
+    await expect(list.getByRole('button', { name: /Club meeting/ })).toBeVisible();
+  });
+
+  test('drag an event to a new time, and its edge to make it longer', async ({ page, phone }) => {
+    test.skip(phone, 'dragging with a mouse is for the computer');
+    await page.goto('/calendar');
+    await page.getByRole('group', { name: 'Calendar view' }).getByRole('button', { name: 'Day' }).click();
+    const dentist = page.locator('.ev-block', { hasText: 'Dentist' });
+    await dentist.scrollIntoViewIfNeeded();
+    let box = await dentist.boundingBox();
+    await page.mouse.move(box.x + 40, box.y + 10);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 40, box.y + 10 + 52, { steps: 4 });   // one hour down
+    await page.mouse.up();
+    await expect(page.getByRole('status').filter({ hasText: 'Event moved' })).toBeVisible();
+    let b = page.calendarCalls.at(-1).body;
+    expect(b.id).toBe('e1'); expect(b.start.slice(11, 16)).toBe('13:00'); expect(b.end.slice(11, 16)).toBe('14:00');
+    await expect(page.getByRole('dialog')).toHaveCount(0);   // a drag doesn’t also open the event
+
+    box = await dentist.boundingBox();
+    await page.mouse.move(box.x + 40, box.y + box.height - 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 40, box.y + box.height - 2 + 26, { steps: 4 });   // half an hour longer
+    await page.mouse.up();
+    await expect.poll(() => page.calendarCalls.length).toBe(2);
+    b = page.calendarCalls.at(-1).body;
+    expect(b.start.slice(11, 16)).toBe('12:00'); expect(b.end.slice(11, 16)).toBe('13:30');
+  });
+
+  test('manage calendars: new, rename, colour', async ({ page }) => {
+    await page.goto('/calendar');
+    await page.getByRole('button', { name: 'Show and hide' }).click();
+    await page.getByRole('button', { name: 'Manage calendars…' }).click();
+    const sheet = page.getByRole('dialog', { name: 'Calendars' });
+    await expect(sheet.getByText('Family')).toBeVisible();
+    await sheet.getByRole('button', { name: 'Options for Family' }).click();
+    await expect(sheet.getByRole('button', { name: 'Remove from my list' })).toBeVisible();
+    await sheet.getByRole('button', { name: 'Rename' }).click();
+    const ask = page.getByRole('dialog', { name: 'Rename calendar' });
+    await ask.getByRole('textbox').fill('Home');
+    await ask.getByRole('button', { name: 'Rename' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Renamed' })).toBeVisible();
+  });
+
   test('keyboard: D, W, M switch views', async ({ page, phone }) => {
     test.skip(phone, 'keyboard shortcuts are for the computer');
     await page.goto('/calendar');

@@ -9,7 +9,7 @@ import { snapshot as taskSnapshot, createTask, updateTask, completeTask, deleteT
 import { meals as mealPlan, withMeals } from '@/lib/meals';
 import { snapshot as trainingSnapshot, saveWorkout, togglePosture } from '@/lib/training';
 import { snapshot as notesSnapshot, createNote, updateNote, deleteNote, createCategory, categoryByName } from '@/lib/notes';
-import { listEvents, listCalendars, createEvent, updateEvent, deleteEvent, googleConnected } from '@/lib/google';
+import { respondToEvent, listEvents, listCalendars, createEvent, updateEvent, deleteEvent, googleConnected } from '@/lib/google';
 import { todayStr, addDays } from '@/lib/dates';
 import { zonedISO, localTime, localDate } from '@/lib/tz';
 
@@ -37,6 +37,7 @@ async function events(start, end) {
   return list.filter((e) => !e.declined).map((e) => ({
     id: e.id, calendar_id: e.calendarId, can_delete: writable.has(e.calendarId) || undefined,
     title: e.title, meal: e.meal, calendar: e.calendar, location: e.location || undefined,
+    repeats: e.recurring || undefined, guests: e.guests?.length ? e.guests.filter((g) => !g.self).map((g) => g.name || g.email) : undefined, my_reply: e.myStatus || undefined, video_call: e.meet || undefined,
     date: e.allDay ? e.start : localDate(e.start),
     time: e.allDay ? 'all day' : `${localTime(e.start)} – ${localTime(e.end)}`,
   })).filter((e) => e.date >= start && e.date <= end);
@@ -140,34 +141,45 @@ const handler = createMcpHandler((server) => {
   }, async ({ start_date, end_date }) => text(await events(start_date, end_date)));
 
   server.registerTool('create_event', {
-    title: 'Create event', description: "Add an event to the user's primary Google Calendar. Times are HH:MM in the user's timezone; omit times for an all-day event.",
+    title: 'Create event', description: "Add an event to the user's Google Calendar (their main one unless calendar_id is given). Times are HH:MM in the user's timezone; omit times for an all-day event. Can repeat, invite guests, add a video call and set reminders.",
     inputSchema: z.object({
       title: z.string().min(1), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(), end_time: z.string().regex(/^\d{2}:\d{2}$/).optional(), location: z.string().optional(),
+      start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(), end_time: z.string().regex(/^\d{2}:\d{2}$/).optional(), location: z.string().optional(), calendar_id: z.string().optional(),
+      description: z.string().optional(), guests: z.array(z.string().email()).optional().describe('Guest emails (the full list)'), email_guests: z.boolean().optional().describe('Email guests about this; ask the user first'),
+      repeat: z.string().optional().describe('RRULE, e.g. "RRULE:FREQ=WEEKLY;BYDAY=TU,TH" or "RRULE:FREQ=MONTHLY;COUNT=6"; "" stops it repeating'),
+      video_call: z.boolean().optional().describe('Add (or remove) a Google Meet link'),
+      reminder_minutes: z.array(z.number().int().min(0).max(40320)).max(5).optional().describe('Notifications this many minutes before'),
     }),
-  }, async ({ title, date, start_time, end_time, location }) => {
+  }, async ({ title, date, start_time, end_time, location, calendar_id, description, guests, email_guests, repeat, video_call, reminder_minutes }) => {
     try {
-      if (!start_time) { await createEvent({ title, allDay: true, start: date, end: addDays(date, 1), location }); return text(`Added "${title}" on ${date} (all day).`); }
+      const more = { calendarId: calendar_id, ...{ description, guests, notify: email_guests === true, repeat, meet: video_call, reminders: reminder_minutes ? { useDefault: false, overrides: reminder_minutes.map((minutes) => ({ method: 'popup', minutes })) } : undefined } };
+      if (!start_time) { await createEvent({ title, allDay: true, start: date, end: addDays(date, 1), location, ...more }); return text(`Added "${title}" on ${date} (all day).`); }
       const endT = end_time || (() => { const [h, m] = start_time.split(':').map(Number); const t = h * 60 + m + 60; return `${String(Math.floor(t / 60) % 24).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; })();
-      await createEvent({ title, start: `${date}T${start_time}:00`, end: `${date}T${endT}:00`, location });
+      await createEvent({ title, start: `${date}T${start_time}:00`, end: `${endT <= start_time ? addDays(date, 1) : date}T${endT}:00`, location, ...more });
       return text(`Added "${title}" on ${date}, ${start_time}–${endT}.`);
     } catch (e) { return fail(e.message); }
   });
 
   server.registerTool('update_event', {
     title: 'Update event',
-    description: "Change an event on the user's Google Calendar, using id and calendar_id from get_calendar. Pass only what should change. To move or resize it, pass date (and start_time, with end_time or it lasts an hour); a date with no start_time makes it all-day. For a repeating event this changes only that occurrence.",
+    description: "Change an event on the user's Google Calendar, using id and calendar_id from get_calendar. Pass only what should change. To move or resize it, pass date (and start_time, with end_time or it lasts an hour); a date with no start_time makes it all-day. For a repeating event, scope says how far the change goes: this occurrence (the default), following (this and later ones) or all. Ask the user which they mean if it isn't clear.",
     inputSchema: z.object({
       id: z.string().min(1), calendar_id: z.string().min(1), title: z.string().min(1).optional(), location: z.string().optional(),
       date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), start_time: z.string().regex(/^\d{2}:\d{2}$/).optional(), end_time: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+      scope: z.enum(['this', 'following', 'all']).optional(), move_to_calendar_id: z.string().optional(),
+      description: z.string().optional(), guests: z.array(z.string().email()).optional().describe('Guest emails (the full list)'), email_guests: z.boolean().optional().describe('Email guests about this; ask the user first'),
+      repeat: z.string().optional().describe('RRULE, e.g. "RRULE:FREQ=WEEKLY;BYDAY=TU,TH" or "RRULE:FREQ=MONTHLY;COUNT=6"; "" stops it repeating'),
+      video_call: z.boolean().optional().describe('Add (or remove) a Google Meet link'),
+      reminder_minutes: z.array(z.number().int().min(0).max(40320)).max(5).optional().describe('Notifications this many minutes before'),
     }),
-  }, async ({ id, calendar_id, title, location, date, start_time, end_time }) => {
+  }, async ({ id, calendar_id, title, location, date, start_time, end_time, scope, move_to_calendar_id, description, guests, email_guests, repeat, video_call, reminder_minutes }) => {
     try {
       const cal = (await listCalendars()).find((c) => c.id === calendar_id);
       if (!cal) return fail('No calendar with that calendar_id. Get it from get_calendar.');
       if (!cal.writable) return fail(`"${cal.name}" is a read-only calendar for this account, so its events can't be changed here.`);
       if (start_time && !date) return fail('Pass date along with start_time.');
-      const patch = { calendarId: calendar_id, id, title, location };
+      const patch = { calendarId: calendar_id, id, title, location, scope, moveTo: move_to_calendar_id, ...{ description, guests, notify: email_guests === true, repeat, meet: video_call, reminders: reminder_minutes ? { useDefault: false, overrides: reminder_minutes.map((minutes) => ({ method: 'popup', minutes })) } : undefined } };
+      for (const k of Object.keys(patch)) if (patch[k] === undefined) delete patch[k];
       if (date && !start_time) Object.assign(patch, { allDay: true, start: date, end: addDays(date, 1) });
       else if (date) {
         const endT = end_time || (() => { const [h, m] = start_time.split(':').map(Number); const t = h * 60 + m + 60; return `${String(Math.floor(t / 60) % 24).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; })();
@@ -180,19 +192,29 @@ const handler = createMcpHandler((server) => {
 
   server.registerTool('delete_event', {
     title: 'Delete event',
-    description: "Delete an event from the user's Google Calendar, using id and calendar_id from get_calendar. For a repeating event this removes only that occurrence. Always confirm with the user (title and date) before deleting.",
-    inputSchema: z.object({ id: z.string().min(1), calendar_id: z.string().min(1) }),
-  }, async ({ id, calendar_id }) => {
+    description: "Delete an event from the user's Google Calendar, using id and calendar_id from get_calendar. For a repeating event, scope removes this occurrence (the default), following (this and later ones) or all. Always confirm with the user (title, date and how many) before deleting.",
+    inputSchema: z.object({ id: z.string().min(1), calendar_id: z.string().min(1), scope: z.enum(['this', 'following', 'all']).optional() }),
+  }, async ({ id, calendar_id, scope }) => {
     try {
       const cal = (await listCalendars()).find((c) => c.id === calendar_id);
       if (!cal) return fail('No calendar with that calendar_id. Get it from get_calendar.');
       if (!cal.writable) return fail(`"${cal.name}" is a read-only calendar for this account, so its events can't be deleted here.`);
-      await deleteEvent(calendar_id, id);
+      await deleteEvent(calendar_id, id, { scope });
       return text(`Deleted from ${cal.name}.`);
     } catch (e) {
       if (e.status === 404 || e.status === 410) return fail('That event no longer exists (it may already be deleted).');
       return fail(e.message);
     }
+  });
+
+  server.registerTool('respond_to_event', {
+    title: 'Reply to invitation', description: "Answer an invitation on the user's calendar (events from get_calendar that have my_reply). The organiser is told.",
+    inputSchema: z.object({ id: z.string().min(1), calendar_id: z.string().min(1), reply: z.enum(['yes', 'no', 'maybe']), scope: z.enum(['this', 'all']).optional() }),
+  }, async ({ id, calendar_id, reply, scope }) => {
+    try {
+      await respondToEvent({ calendarId: calendar_id, id, status: { yes: 'accepted', no: 'declined', maybe: 'tentative' }[reply], scope });
+      return text(`Replied ${reply}.`);
+    } catch (e) { return fail(e.message); }
   });
 
   server.registerTool('list_notes', {
