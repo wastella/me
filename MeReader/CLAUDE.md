@@ -1,6 +1,6 @@
 # MeReader
 
-Part of the Me suite (this folder lives in the `Me` repo; the web dashboard is at the repo root). Formerly called Narrate. William's EPUB reader and on-the-fly audiobook app for iPhone and Mac (SwiftUI). One shared bookmark: pause the audio and the text is on the last word heard; scroll ahead and press play to start from there. README.md describes the features in detail; read it first.
+Part of the Me suite (this folder lives in the `wastella/mesuite` repo; the web dashboard is at the repo root, and the root `CLAUDE.md` has the suite rules). Formerly called Narrate. William's EPUB reader and on-the-fly audiobook app for iPhone and Mac (SwiftUI). One shared bookmark: pause the audio and the text is on the last word heard; scroll ahead and press play to start from there. README.md describes the features in detail; read it first.
 
 ## Names that must not change
 

@@ -1,16 +1,22 @@
-# Me
+# Me suite
+
+This repository (GitHub: `wastella/mesuite`, local folder `~/Developer/Me`) holds a suite of apps custom-built for William. The apps are **separate** (own code, data, build and install; none needs another to run) but **connected** (one name, one icon system, one palette, same owner and devices). `README.md` explains this for people; keep it current.
+
+- **Me** (the repo root): the web dashboard. Everything from "Me (the dashboard)" down is about it.
+- **MeReader** (`MeReader/`): native SwiftUI EPUB reader and audiobook app for iPhone and Mac (formerly Narrate). Not part of the website: it's in `.vercelignore`, has no server, and is built with Xcode. Read `MeReader/CLAUDE.md` before working in it.
+
+Suite rules:
+
+- A new app gets a top-level folder `Me<Name>/` with its own `CLAUDE.md` and `README.md`; list it here and in the README table, and add it to `.vercelignore` unless it is part of the website.
+- Icons: the Me icon's exact "Me" lettering, the app's own color, and a symbol underneath (see `MeReader/tools/make-icon.sh`). Colors so far: Me coral, MeReader blue. UI uses the dashboard's dark palette with the app's color as accent.
+- Apps don't read each other's files or databases. When two apps need to share something, go through the dashboard's API (or its Claude connector), and document the link in both apps.
+- Work in one app shouldn't change another. Commit messages start with the app's name (`MeReader: …`, or the dashboard area such as `Calendar: …`).
+
+# Me (the dashboard)
 
 William's personal life dashboard: tasks, Google Calendar, notes and training. A single owner uses it on a Mac (Electron app) and an iPhone (home-screen web app). Both load the same hosted site, so data syncs through one cloud database.
 
-## The Me suite
-
-This repo holds a suite of apps custom-built for William. Each app beyond the dashboard gets its own top-level folder with its own `CLAUDE.md` and `README.md`; read those before working in it.
-
-- **Me** (the repo root): the web dashboard described below.
-- **MeReader** (`MeReader/`): native SwiftUI EPUB reader and audiobook app for iPhone and Mac (formerly Narrate). It is not part of the website: it's listed in `.vercelignore`, has no server, and is built with Xcode (`MeReader/CLAUDE.md`).
-
-New apps: add a folder `Me<Name>/`, list it here, and add it to `.vercelignore` unless it is part of the website. Everything below is about the dashboard.
-
+## Stack
 
 - Next.js 15 App Router, plain JavaScript (no TypeScript), React 19, custom CSS in `app/globals.css` (minimal dark theme, light variant via `prefers-color-scheme`). No Tailwind or UI library.
 - Data: libSQL through `@libsql/client` (`lib/db.js`). Production uses Turso (`TURSO_DATABASE_URL`); without it, a local file at `data/me.db`. All DB access is async: `const q = await db(); await q.all/get/run(sql, ...args)`, `tx(fn)` for transactions, `kvGet`/`kvSet` for small settings. Schema is `CREATE TABLE IF NOT EXISTS` in `SCHEMA`; column additions go in `init()` as guarded `ALTER TABLE`s.
@@ -44,7 +50,7 @@ New apps: add a folder `Me<Name>/`, list it here, and add it to `.vercelignore` 
 - Check UI changes in the browser at desktop width and at phone width (375px), with no horizontal overflow.
 - Deploy: `npx --yes vercel@65.12.1 deploy --prod --yes`.
 - Mac app: `npm run install-app` rebuilds `/Applications/Me.app`. This is only needed when something in `electron/` changes, since the app loads the hosted site.
-- Git: work on `main`. Commit freely, but **ask before every `git push`**. GitHub is `wastella/me`. The token can't push files under `.github/workflows/`, which is why the reminders workflow sits in `scripts/`.
+- Git: work on `main`. Commit freely, but **ask before every `git push`**. GitHub is `wastella/mesuite` (renamed from `wastella/me`). The token can't push files under `.github/workflows/`, which is why the reminders workflow sits in `scripts/`.
 
 ## Rules
 

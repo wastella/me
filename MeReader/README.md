@@ -1,5 +1,7 @@
 # MeReader
 
+One of the [Me suite](../README.md) apps: separate from the Me dashboard, with the same look.
+
 Read any EPUB, or have it read aloud, with one shared bookmark. Pause the audio and the text is
 sitting on the word you heard last. Scroll ahead while reading, press play, and it starts from there.
 

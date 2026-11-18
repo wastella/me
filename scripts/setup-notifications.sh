@@ -21,7 +21,7 @@ for pair in "VAPID_PUBLIC_KEY:$pub" "VAPID_PRIVATE_KEY:$priv" "VAPID_SUBJECT:htt
 done
 
 echo "3/4  Saving the scheduler secret in GitHub…"
-printf '%s' "$cron" | gh secret set CRON_SECRET --repo wastella/me
+printf '%s' "$cron" | gh secret set CRON_SECRET --repo wastella/mesuite
 echo "     ✓ CRON_SECRET"
 
 echo "4/4  Deploying…"
