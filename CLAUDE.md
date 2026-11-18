@@ -4,7 +4,7 @@ This repository (GitHub: `wastella/mesuite`, local folder `~/Developer/Me`) hold
 
 - **Me** (the repo root): the web dashboard. Everything from "Me (the dashboard)" down is about it.
 - **MeReader** (`MeReader/`): native SwiftUI EPUB reader and audiobook app for iPhone and Mac (formerly Narrate). Not part of the website: it's in `.vercelignore`, has no server, and is built with Xcode. Read `MeReader/CLAUDE.md` before working in it.
-- **RemindMe** (`RemindMe/`): reminders that flash and lock the Macs until the job is done. The folder is a small native Mac menu-bar app; the reminders themselves live in the dashboard (`lib/memento.js`, `/api/memento`, the `/remindme` page and overlay, connector tools `set_reminder` / `list_reminders` / `cancel_reminder`). Read `RemindMe/CLAUDE.md` before working on either half.
+- **RemindMe** (`RemindMe/`): reminders that lock the Macs until the job is done. The folder is a small native Mac menu-bar app; the reminders themselves live in the dashboard (`lib/memento.js`, `/api/memento`, the `/remindme` page and overlay, connector tools `set_reminder` / `list_reminders` / `cancel_reminder`). Read `RemindMe/CLAUDE.md` before working on either half.
 
 Suite rules:
 

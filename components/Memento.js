@@ -50,7 +50,7 @@ export default function MementoOverlay() {
     tick();
     const t = setInterval(tick, 250);
     document.body.classList.add('memento-open');
-    try { navigator.vibrate?.([300, 150, 300, 150, 300]); } catch {}
+    try { navigator.vibrate?.(300); } catch {}
     return () => { clearInterval(t); document.body.classList.remove('memento-open'); };
   }, [key]); // eslint-disable-line
 
@@ -66,7 +66,6 @@ export default function MementoOverlay() {
   const total = m.lock_seconds * 1000;
   return (
     <div className="memento" role="alertdialog" aria-modal="true" aria-label={`Reminder: ${m.text}`} key={key}>
-      <div className="memento-flash" aria-hidden="true" />
       <div className="memento-brand"><span className="memento-mark">Me</span>RemindMe</div>
       <div className="memento-main">
         <h1>{m.text}</h1>

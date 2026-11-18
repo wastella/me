@@ -86,7 +86,7 @@ function Settings() {
           <section className="card">
             <div className="card-head"><h2>RemindMe</h2></div>
             <div className="card-body">
-              <p>Reminders you can’t ignore. Ask Claude “remind me to move the laundry in 40 minutes”: when it goes off, your Macs flash and lock on the reminder for as long as the job takes, then ask if you did it. <a href="/remindme">See your reminders</a>.</p>
+              <p>Reminders you can’t ignore. Ask Claude “remind me to move the laundry in 40 minutes”: when it goes off, your Macs lock on the reminder for as long as the job takes, then ask if you did it. <a href="/remindme">See your reminders</a>.</p>
               <p><b>On each Mac:</b> install the RemindMe app (in the Me folder, run <code>./RemindMe/build.sh install</code>), click the bell in the menu bar → <b>Set Key…</b>, and paste this key. Turn on <b>Open at Login</b> there too.</p>
               <CopyField value={status.memento.key} secretLabel="Key" />
               <p style={{ marginTop: 12 }}><b>On your iPhone:</b> {status?.push?.enabled

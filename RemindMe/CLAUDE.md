@@ -1,6 +1,6 @@
 # RemindMe
 
-Part of the Me suite (see the root `CLAUDE.md`). RemindMe is William's reminder that can't be ignored: he asks Claude to remind him of something, and when it goes off his Macs flash and lock on the reminder for as long as the job takes ("go move the laundry": about 4 minutes), then ask whether he did it. Accent colour: amber.
+Part of the Me suite (see the root `CLAUDE.md`). RemindMe is William's reminder that can't be ignored: he asks Claude to remind him of something, and when it goes off his Macs lock on the reminder for as long as the job takes ("go move the laundry": about 4 minutes), then ask whether he did it. Accent colour: amber.
 
 Naming: the app was first called MeMento. Everything William sees says RemindMe (the one suite app whose name ends in "Me" rather than starting with it; his choice). Inside the dashboard the old word remains on purpose, so the key and stored reminders carry over: table `mementos`, `lib/memento.js`, `/api/memento`, `components/Memento.js`, CSS classes `.memento-*`, and the key's purpose string `memento`. Don't rename those.
 
@@ -8,14 +8,14 @@ Naming: the app was first called MeMento. Everything William sees says RemindMe 
 
 - **Reminders live in the dashboard**, not here: table `mementos`, logic in `/lib/memento.js`, routes `/app/api/memento` (signed-in web app) and `/app/api/memento/device` (this Mac app; Bearer key derived from `SESSION_SECRET`, shown in Me → Settings → RemindMe). The server's clock decides when a reminder fires and when its lock ends, so every device agrees.
 - **Claude** sets them with the dashboard connector's `set_reminder` tool and chooses `lock_minutes` itself (guidance is in the tool description). Also `list_reminders`, `cancel_reminder`.
-- **This folder is the Mac app**: one Swift file (`Sources/main.swift`, AppKit + SwiftUI), built with `swiftc` by `build.sh`. No Xcode project. It's a menu-bar app (bell icon, no Dock icon) with one small window (status, upcoming reminders, Test Flash, Set Key, Open at Login) that appears whenever William opens the app, because the bell can be hidden behind the MacBook's notch. It asks the dashboard every 30 seconds, and at the moment the next reminder is due, what should be on screen.
+- **This folder is the Mac app**: one Swift file (`Sources/main.swift`, AppKit + SwiftUI), built with `swiftc` by `build.sh`. No Xcode project. It's a menu-bar app (bell icon, no Dock icon) with one small window (status, upcoming reminders, Test Lock, Set Key, Open at Login) that appears whenever William opens the app, because the bell can be hidden behind the MacBook's notch. It asks the dashboard every 30 seconds, and at the moment the next reminder is due, what should be on screen.
 - **The phone** has no app here: the dashboard's web app shows the same takeover (`/components/Memento.js`, page `/remindme`) and gets a web push when one fires, if notifications are set up. iOS doesn't let apps lock the phone, so the hard lock is Mac-only.
 
 ## Behaviour to keep
 
 - While locked, the Mac shows the reminder on every display above everything, with the Dock, menu bar, app switching, Force Quit and log-out turned off (`NSApp.presentationOptions`). Quit is refused too.
 - It always lets go: when the server's lock time passes; never after more than an hour (`maxLock`, and `MAX_LOCK` on the server); and through the emergency exit (typing "I am skipping this reminder"), which is recorded as `skipped` so Claude can see it. Don't remove these.
-- The flash is three slow pulses, not a strobe.
+- No flashing, ever: William asked for it to be removed over health concerns. The reminder fades in once with a single chime.
 - After the lock: **Done**, or **Not yet** (comes back in 10 minutes and locks again). Unanswered for 12 hours = `missed`.
 - A reminder can be cancelled only before it fires.
 

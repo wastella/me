@@ -1,6 +1,6 @@
 // RemindMe: the Me suite's reminder that you can't ignore (first called MeMento). Lives in the menu
 // bar, asks the Me dashboard every few seconds what should be on screen, and
-// when a reminder fires it flashes and covers every display. While the
+// when a reminder fires it covers every display. While the
 // reminder's lock time runs, the Mac can't be used for anything else.
 //
 //   RemindMe --demo 8             lock for 8 seconds with a sample reminder (no server)
@@ -107,7 +107,6 @@ final class LockModel: ObservableObject {
     @Published var remaining: TimeInterval = 0
     @Published var total: TimeInterval = 0
     @Published var locked = true
-    @Published var flash = false
     @Published var sending = false
     @Published var problem = ""
     @Published var typed = ""
@@ -123,18 +122,17 @@ struct LockView: View {
     var body: some View {
         ZStack {
             Look.bg
-            Look.amber.opacity(model.flash ? 1 : 0)
             VStack(spacing: 0) {
                 HStack(spacing: 10) {
                     Text("Me").font(.system(size: 13, weight: .bold)).foregroundColor(.white)
                         .frame(width: 30, height: 30).background(Look.amber).clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    Text("RemindMe").font(.system(size: 17, weight: .semibold)).foregroundColor(model.flash ? .black : Look.text)
+                    Text("RemindMe").font(.system(size: 17, weight: .semibold)).foregroundColor(Look.text)
                     Spacer()
                 }
                 Spacer(minLength: 20)
                 Text(model.text)
                     .font(.system(size: 68, weight: .bold)).tracking(-1.5)
-                    .foregroundColor(model.flash ? .black : Look.text)
+                    .foregroundColor(Look.text)
                     .multilineTextAlignment(.center).lineLimit(5).minimumScaleFactor(0.4)
                     .frame(maxWidth: 1100)
                 Spacer().frame(height: 44)
@@ -224,7 +222,7 @@ final class LockController {
         }
         hold(model.locked)
         front()
-        flashAndChime()
+        arrive()
         log("showing “\(m.text)” on \(windows.count) screen(s), locked for \(Int(model.remaining))s")
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
             guard let self, self.current != nil else { return }
@@ -244,16 +242,10 @@ final class LockController {
         kiosk = on
         NSApp.presentationOptions = on ? [.hideDock, .hideMenuBar, .disableProcessSwitching, .disableForceQuit, .disableSessionTermination, .disableHideApplication, .disableAppleMenu] : []
     }
-    private func flashAndChime() {
-        // Three slow pulses (gentle on the eyes, impossible to miss) and a chime with each.
-        for i in 0..<3 {
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.9) { [weak self] in
-                guard let self, self.current != nil else { return }
-                NSSound(named: "Glass")?.play()
-                withAnimation(.easeOut(duration: 0.12)) { self.model.flash = true }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { withAnimation(.easeIn(duration: 0.4)) { self.model.flash = false } }
-            }
-        }
+    // No flashing (William asked for none): the reminder fades in, with one chime.
+    private func arrive() {
+        NSSound(named: "Glass")?.play()
+        for w in windows where !windowed { w.alphaValue = 0; w.animator().alphaValue = 1 }
     }
     private func tickClock() {
         model.remaining = max(0, lockUntil.timeIntervalSinceNow)
@@ -336,7 +328,7 @@ struct HomeView: View {
             Toggle("Open at Login", isOn: Binding(get: { model.openAtLogin }, set: { _ in model.toggleLogin() }))
                 .toggleStyle(.checkbox).font(.system(size: 13)).foregroundColor(Look.text)
             HStack(spacing: 8) {
-                Button("Test Flash (5 seconds)") { model.test() }
+                Button("Test Lock (5 seconds)") { model.test() }
                 Button(model.connected ? "Change Key…" : "Set Key…") { model.setKey() }
                 Spacer()
                 Button("Quit") { model.quit() }
@@ -373,7 +365,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             lock.answer = { _, _, done in done(true); DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NSApp.terminate(nil) } }
             lock.show(m, skew: 0)
             if let i = args.firstIndex(of: "--snapshot"), let base = args.dropFirst(i + 1).first {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { self.lock.snapshot(to: base + "-flash.png") }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) { self.lock.snapshot(to: base + "-locked.png") }
                 DispatchQueue.main.asyncAfter(deadline: .now() + demo + 1) { self.lock.snapshot(to: base + "-ask.png"); NSApp.terminate(nil) }
             }
@@ -381,7 +372,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         lock.answer = { [weak self] m, action, done in self?.client.answer(m.id, action) { ok in done(ok); if ok { self?.poll() } } }
         home.setKey = { [weak self] in self?.askForKey() }
-        home.test = { [weak self] in self?.testFlash() }
+        home.test = { [weak self] in self?.testLock() }
         home.toggleLogin = { [weak self] in self?.toggleLogin() }
         home.quit = { NSApp.terminate(nil) }
         home.openAtLogin = SMAppService.mainApp.status == .enabled
@@ -459,7 +450,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Open RemindMe", action: #selector(openHome), keyEquivalent: "").target = self
-        menu.addItem(withTitle: "Test Flash (5 seconds)", action: #selector(testFlash), keyEquivalent: "").target = self
+        menu.addItem(withTitle: "Test Lock (5 seconds)", action: #selector(testLock), keyEquivalent: "").target = self
         let login = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: ""); login.target = self
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
@@ -469,7 +460,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc func openHome() { showHome() }
-    @objc func testFlash() {
+    @objc func testLock() {
         let m = Memento(id: "test-\(Date().timeIntervalSince1970)", text: "This is what a reminder looks like", due_at: "", lock_seconds: 5, fired_at: nil)
         let real = lock.answer
         lock.answer = { [weak self] _, _, done in done(true); self?.lock.answer = real }

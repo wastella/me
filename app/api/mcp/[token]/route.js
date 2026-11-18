@@ -265,7 +265,7 @@ const handler = createMcpHandler((server) => {
   const whenText = (iso) => `${localDate(iso)} ${localTime(iso)}`;
   server.registerTool('set_reminder', {
     title: 'Set reminder (RemindMe)',
-    description: "Set a RemindMe reminder. When it goes off, the user's Mac screens flash and show it full-screen (and their phone is notified), so they can't miss it. lock_minutes is how long the screens stay locked on the reminder: YOU choose it, as a realistic time to get up and actually do the thing, so they can't just dismiss it and keep working. Guide: a quick physical chore (move the laundry, take out the trash, take a pill, feed the dog) 3–5; a longer one (fold laundry, shower, tidy the room, walk the dog) 10–20; something that isn't done at home right then, or just a heads-up (leave for school, call someone, an idea to remember) 0–1. Use 0 for a flash with no lock. Never more than 60. During the lock they cannot dismiss it; afterwards they answer Done or Not yet (it returns in 10 minutes). Give either in_minutes, or date + time in the user's timezone. Tell the user the time and the lock length you chose.",
+    description: "Set a RemindMe reminder. When it goes off, the user's Mac screens show it full-screen (a calm fade-in with a chime, no flashing) (and their phone is notified), so they can't miss it. lock_minutes is how long the screens stay locked on the reminder: YOU choose it, as a realistic time to get up and actually do the thing, so they can't just dismiss it and keep working. Guide: a quick physical chore (move the laundry, take out the trash, take a pill, feed the dog) 3–5; a longer one (fold laundry, shower, tidy the room, walk the dog) 10–20; something that isn't done at home right then, or just a heads-up (leave for school, call someone, an idea to remember) 0–1. Use 0 to show it with no lock. Never more than 60. During the lock they cannot dismiss it; afterwards they answer Done or Not yet (it returns in 10 minutes). Give either in_minutes, or date + time in the user's timezone. Tell the user the time and the lock length you chose.",
     inputSchema: z.object({
       text: z.string().min(1).max(200).describe('What to do, as a short instruction: "Move the laundry to the dryer"'),
       in_minutes: z.number().min(0).max(60 * 24 * 60).optional(),
@@ -276,7 +276,7 @@ const handler = createMcpHandler((server) => {
     try {
       if (in_minutes === undefined && !(date && time)) return fail('Pass in_minutes, or both date and time.');
       const m = await createMemento({ text: what, ...(in_minutes !== undefined ? { in_minutes } : { due_at: zonedISO(date, time) }), lock_seconds: Math.round(lock_minutes * 60), source: 'claude' });
-      return text(`Reminder set for ${whenText(m.due_at)}: "${m.text}". ${m.lock_seconds ? `Screens lock for ${Math.round(m.lock_seconds / 6) / 10} min.` : 'Flash only, no lock.'} (id ${m.id})`);
+      return text(`Reminder set for ${whenText(m.due_at)}: "${m.text}". ${m.lock_seconds ? `Screens lock for ${Math.round(m.lock_seconds / 6) / 10} min.` : 'No lock.'} (id ${m.id})`);
     } catch (e) { return fail(e.message); }
   });
 

@@ -9,7 +9,7 @@ import { api } from '@/lib/client';
 import { IconTrash } from '@/components/Icons';
 
 const when = (iso) => new Date(iso).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-const lockText = (s) => (s ? `locks ${s % 60 === 0 ? s / 60 : Math.round(s / 6) / 10} min` : 'flash only');
+const lockText = (s) => (s ? `locks ${s % 60 === 0 ? s / 60 : Math.round(s / 6) / 10} min` : 'no lock');
 const OUTCOME = { done: 'Done', skipped: 'Skipped', missed: 'Never answered' };
 
 export default function MementoPage() {

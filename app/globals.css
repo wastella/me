@@ -729,10 +729,7 @@ html.desktop .sheet.drawer .sheet-head { padding-top: 38px; }
 
 /* RemindMe: the reminder that covers everything (amber is its colour in the suite) */
 body.memento-open { overflow: hidden; }
-.memento { --amber: #f2a91e; position: fixed; inset: 0; z-index: 1000; background: #0c0c0d; color: #ececee; display: flex; flex-direction: column; padding: max(22px, env(safe-area-inset-top)) 24px max(22px, env(safe-area-inset-bottom)); -webkit-app-region: no-drag; overscroll-behavior: contain; touch-action: none; }
-.memento-flash { position: absolute; inset: 0; background: var(--amber); opacity: 0; pointer-events: none; animation: memento-flash .9s ease-out 3; }
-@keyframes memento-flash { 0%, 45% { opacity: 1; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .memento-flash { animation-iteration-count: 1; } }
+.memento { animation: memento-in .5s ease-out; --amber: #f2a91e; position: fixed; inset: 0; z-index: 1000; background: #0c0c0d; color: #ececee; display: flex; flex-direction: column; padding: max(22px, env(safe-area-inset-top)) 24px max(22px, env(safe-area-inset-bottom)); -webkit-app-region: no-drag; overscroll-behavior: contain; touch-action: none; }
 .memento-brand { position: relative; display: flex; align-items: center; gap: 9px; font-weight: 600; font-size: 15px; }
 .memento-mark { width: 26px; height: 26px; border-radius: 7px; background: var(--amber); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 700; letter-spacing: -0.02em; }
 .memento-main { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 22px; min-height: 0; }
@@ -753,3 +750,4 @@ body.memento-open { overflow: hidden; }
 .memento-list li div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .memento-list b { font-weight: 550; overflow-wrap: anywhere; }
 .memento-list span { font-size: 12.5px; color: var(--muted); }
+@keyframes memento-in { from { opacity: 0; } }

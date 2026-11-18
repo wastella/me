@@ -8,7 +8,7 @@ A set of apps custom-built for one person. Each app does one job and stands on i
 |---|---|---|---|---|
 | **Me** | Dashboard: tasks, Google Calendar, notes, training | Web, iPhone home screen, Mac | repo root | Coral |
 | **MeReader** | Reads any EPUB and turns it into an audiobook, with one shared place | iPhone, Mac | [`MeReader/`](MeReader/) | Blue |
-| **RemindMe** | Reminders that flash and lock your screens until you’ve done the thing | Mac (menu bar), iPhone through Me | [`RemindMe/`](RemindMe/) | Amber |
+| **RemindMe** | Reminders that lock your screens until you’ve done the thing | Mac (menu bar), iPhone through Me | [`RemindMe/`](RemindMe/) | Amber |
 
 ## Separate
 
