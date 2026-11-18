@@ -52,6 +52,7 @@
 		E1537A7A3C0D1D2B84D6B8C6 /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C875B1A4A4E0BC63DBEF322 /* Library.swift */; };
 		EA846DD3B5A124120288EC8D /* RenderedAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C18085225A3ECF90D812B3 /* RenderedAudio.swift */; };
 		EA84DA20C03454A20D12B559 /* Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03178A9E9584E64FDF035365 /* Design.swift */; };
+		EFC40D97E40F49774F57C9C0 /* MeReader.icns in Resources */ = {isa = PBXBuildFile; fileRef = 735E0D98AA31AD1C429F6C9D /* MeReader.icns */; };
 		F386D6525779F16126900841 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8825C2E1FA29C15F36A743AF /* SettingsView.swift */; };
 		F3DEA0ADB744839DA72D61E9 /* SpeechFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD35BCB19C05CCAB5615CFE6 /* SpeechFilter.swift */; };
 		F51BA6AE58E71806981C9901 /* ReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 223C01F46F79AB7A513057C5 /* ReaderView.swift */; };
@@ -86,6 +87,7 @@
 		4772B4D2A276001A66E3DA31 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		4D2B2B981B5076F1C6BD4E06 /* EPUBParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBParser.swift; sourceTree = "<group>"; };
 		64C18085225A3ECF90D812B3 /* RenderedAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderedAudio.swift; sourceTree = "<group>"; };
+		735E0D98AA31AD1C429F6C9D /* MeReader.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = MeReader.icns; sourceTree = "<group>"; };
 		827675DA2A3AB165837ACC77 /* PlayerViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerViews.swift; sourceTree = "<group>"; };
 		8825C2E1FA29C15F36A743AF /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		8D03316F3B508282F1DD4447 /* kokoro-voices.npz */ = {isa = PBXFileReference; path = "kokoro-voices.npz"; sourceTree = "<group>"; };
@@ -206,6 +208,7 @@
 			isa = PBXGroup;
 			children = (
 				8D03316F3B508282F1DD4447 /* kokoro-voices.npz */,
+				735E0D98AA31AD1C429F6C9D /* MeReader.icns */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -339,6 +342,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DB1312600BB69482BB297535 /* Assets.xcassets in Resources */,
+				EFC40D97E40F49774F57C9C0 /* MeReader.icns in Resources */,
 				04E5E51C17AEB2F17886753D /* kokoro-voices.npz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

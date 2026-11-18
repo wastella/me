@@ -2,19 +2,19 @@
 // under the wordmark. Run: swift tools/make-icon.swift   (writes into Assets.xcassets)
 import AppKit
 
-func render(rounded: Bool, to path: String) {
+func render(to path: String) {
     let s: CGFloat = 1024
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(s), pixelsHigh: Int(s), bitsPerSample: 8,
                                samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
                                bytesPerRow: 0, bitsPerPixel: 0)!
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-    let coral = NSColor(srgbRed: 0xd1 / 255, green: 0x49 / 255, blue: 0x2e / 255, alpha: 1)   // same as Me's icon
-    coral.setFill()
-    let rect = NSRect(x: 0, y: 0, width: s, height: s)
-    (rounded ? NSBezierPath(roundedRect: rect, xRadius: 232, yRadius: 232) : NSBezierPath(rect: rect)).fill()
+    // A full, opaque square: the system rounds the corners. Don't draw rounded corners here:
+    // macOS 26 adds a glass effect to icons with transparent corners, which tints the white.
+    NSColor(srgbRed: 0xd1 / 255, green: 0x49 / 255, blue: 0x2e / 255, alpha: 1).setFill()   // same as Me's icon
+    NSRect(x: 0, y: 0, width: s, height: s).fill()
 
     // "Me", same weight and tracking as the Me icon, lifted to make room for the book.
-    let font = NSFont.systemFont(ofSize: 460, weight: .bold)
+    let font = NSFont(name: "Helvetica-Bold", size: 460)!   // the letterforms of the Me icon
     let text = NSAttributedString(string: "Me", attributes: [.font: font, .foregroundColor: NSColor.white, .kern: -16])
     let size = text.size()
     let baselineFromTop: CGFloat = 590
@@ -36,6 +36,6 @@ func render(rounded: Bool, to path: String) {
     try! rep.representation(using: .png, properties: [:])!.write(to: URL(fileURLWithPath: path))
 }
 
-let dir = "Shared/Assets.xcassets/AppIcon.appiconset/"
-render(rounded: false, to: dir + "icon.png")       // iPhone: iOS rounds the corners itself
-render(rounded: true, to: dir + "icon-mac.png")    // Mac: rounded like the Me app's icon
+// One image for both: the iPhone asset catalog, and the Mac's plain .icns
+// (macOS/Resources/MeReader.icns, built from this PNG by tools/make-icon.sh).
+render(to: "Shared/Assets.xcassets/AppIcon.appiconset/icon.png")
