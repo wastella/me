@@ -14,7 +14,7 @@ enum Palette {
     static let text = Color(hex: 0xececee)        // --text
     static let secondary = Color(hex: 0x9c9ca4)   // --muted
     static let tertiary = Color(hex: 0x74747c)    // --faint
-    static let accent = Color(hex: 0xee6a4d)      // --accent (Me coral)
+    static let accent = Color(hex: 0x5b8def)      // MeReader's own color: the blue of its icon, lightened for dark
     static let live = Color(hex: 0x56bd87)        // --ok
     static let warn = Color(hex: 0xe0a23c)        // --warn
 }
@@ -25,7 +25,7 @@ extension Color {
     }
 }
 
-/// The Me mark, as in the dashboard's sidebar: a coral rounded square with "Me".
+/// The Me mark, as in the dashboard's sidebar: a rounded square with "Me", in this app's color.
 struct MeMark: View {
     var size: CGFloat = 24
     var body: some View {

@@ -24,8 +24,8 @@ enum ReaderTheme: String, CaseIterable, Identifiable {
     var secondary: Color { text.opacity(0.55) }
     var highlight: Color {
         switch self {
-        case .light, .sepia: return Color(hex: 0xd9502f).opacity(0.26)
-        case .dark, .black: return Color(hex: 0xee6a4d).opacity(0.42)
+        case .light, .sepia: return Color(hex: 0x2f63c8).opacity(0.24)
+        case .dark, .black: return Color(hex: 0x5b8def).opacity(0.42)
         }
     }
     var colorScheme: ColorScheme { self == .light || self == .sepia ? .light : .dark }

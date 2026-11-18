@@ -6,6 +6,10 @@ Part of the Me suite (this folder lives in the `Me` repo; the web dashboard is a
 
 The app was renamed from Narrate to MeReader, but these keep the old name on purpose so no books, places or settings are lost: the bundle IDs (`idk.Narrate`, `idk.Narrate.mac`), the sync folder `iCloud Drive/Narrate`, and the `Narrate/` folder in Application Support. Don't rename them.
 
+## Look
+
+Same neutrals as the dashboard's dark theme (`Palette` in `Shared/Views/Design.swift` mirrors `app/globals.css`). Each Me app has its own color: MeReader is blue (`#2f63c8` icon, `#5b8def` accent on dark); the dashboard is coral. The icon is generated from the Me icon by `tools/make-icon.sh`, so the "Me" lettering is identical; only the background color and the symbol under it change. Keep the icon an opaque square (macOS adds a glass effect to icons with transparent corners).
+
 ## Project
 
 - `project.yml` is the source of truth (XcodeGen). `MeReader.xcodeproj` is generated: after adding or removing files or changing targets, settings or packages, run `xcodegen generate` instead of editing the `.pbxproj`.
