@@ -39,6 +39,9 @@ The iPhone can't run a neural voice with the screen off, so the Mac does it ahea
 (incl. homoglyph domains and `<.com>`), and author/translator notes. Muted paragraphs stay on
 screen (dimmed) so saved positions never shift.
 
+## Widget (also on the CarPlay screen)
+A "Continue listening" widget shows your current book with a play / pause button. Add it on the iPhone Home Screen, and in iOS 26 to the car: Settings → General → CarPlay → your car → Widgets. No CarPlay entitlement or paid account is needed for this.
+
 ## CarPlay
 MeReader plays through CarPlay's built-in **Now Playing** screen today. The dashboard app (tap
 "Continue" → sync → play) is written and runs in the simulator's CarPlay screen. Showing up as its own icon

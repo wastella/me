@@ -34,6 +34,7 @@ struct MeReaderApp: App {
                 }
                 #if os(iOS)
                 .task { AppExpiry.scheduleReminders() }
+                .task { WidgetBridge.start() }
                 #endif
                 #if os(iOS)
                 // On the Mac this loop runs in the app delegate, so it continues with no window open.

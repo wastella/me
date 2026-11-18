@@ -11,10 +11,12 @@
 		06D566E08F6FED71F21624C7 /* ProgressStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FED44B704F0CAB094608EC /* ProgressStore.swift */; };
 		0794AA4605E293BE0D2E2108 /* MLXUtilsLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 1DC127D6948C65CB950A3DBC /* MLXUtilsLibrary */; };
 		0DFE551FF84F5FB8CBD77685 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4772B4D2A276001A66E3DA31 /* Models.swift */; };
+		0E7B59BE842A1681DC553E66 /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E44DC8C078DEC39632BD66A7 /* WidgetBridge.swift */; };
 		1022D97EC86AB4816DBA6B18 /* Narrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE4E16781CF672EA860CE9C3 /* Narrator.swift */; };
 		118938833BE925EA04913C0A /* KokoroSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22BF8801DD840379787501C8 /* KokoroSettings.swift */; };
 		13E5E5389C2C9F9F52B8EB0A /* Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03178A9E9584E64FDF035365 /* Design.swift */; };
 		20156DE6B4BA0BFA056B5E83 /* PlayerViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 827675DA2A3AB165837ACC77 /* PlayerViews.swift */; };
+		2226BCC29E3D89C3C57AA676 /* WidgetBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF18B522E1E84E3269FED725 /* WidgetBridgeApp.swift */; };
 		258AB56F977272A25E10755E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA788BF4EF286AB51955B6A6 /* Theme.swift */; };
 		25A149B06DE58F65976A4967 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8825C2E1FA29C15F36A743AF /* SettingsView.swift */; };
 		4143497C7EA2103C63B8A3AB /* KokoroSwift in Embed Frameworks */ = {isa = PBXBuildFile; productRef = A37BE0D1AF0B71C11DEF25FB /* KokoroSwift */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -50,17 +52,41 @@
 		DB1312600BB69482BB297535 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A7FC2DF5196FE9197818ADC /* Assets.xcassets */; };
 		DB75658DD3ABA97D689643EE /* EPUBParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D2B2B981B5076F1C6BD4E06 /* EPUBParser.swift */; };
 		E1537A7A3C0D1D2B84D6B8C6 /* Library.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C875B1A4A4E0BC63DBEF322 /* Library.swift */; };
+		E6627F934DECD91AB7A1C661 /* MeReaderWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D75231C9C3D693CD55D1472 /* MeReaderWidget.swift */; };
+		E96DAC1F5500F19D7A8E2A1A /* WidgetBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E44DC8C078DEC39632BD66A7 /* WidgetBridge.swift */; };
 		EA846DD3B5A124120288EC8D /* RenderedAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C18085225A3ECF90D812B3 /* RenderedAudio.swift */; };
 		EA84DA20C03454A20D12B559 /* Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03178A9E9584E64FDF035365 /* Design.swift */; };
 		EFC40D97E40F49774F57C9C0 /* MeReader.icns in Resources */ = {isa = PBXBuildFile; fileRef = 735E0D98AA31AD1C429F6C9D /* MeReader.icns */; };
 		F386D6525779F16126900841 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8825C2E1FA29C15F36A743AF /* SettingsView.swift */; };
 		F3DEA0ADB744839DA72D61E9 /* SpeechFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD35BCB19C05CCAB5615CFE6 /* SpeechFilter.swift */; };
 		F51BA6AE58E71806981C9901 /* ReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 223C01F46F79AB7A513057C5 /* ReaderView.swift */; };
+		F5F3219E93EED8A2E25C99CA /* MeReaderWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 40025E26225FD73A045B3EFE /* MeReaderWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F6B0FC7AF50838BC05EC574E /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9A18503C9E89934AFA78748 /* CarPlaySceneDelegate.swift */; };
 		FF347D6AF64563AC2667DB80 /* EPUBParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D2B2B981B5076F1C6BD4E06 /* EPUBParser.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		68714FAB233EA3F0757E76D9 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 434425683C28DC3B82747291 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CBF1DFA0F1AA53209FADB299;
+			remoteInfo = MeReaderWidget;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
+		87595CBBD65D8C4AF6AEB020 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F5F3219E93EED8A2E25C99CA /* MeReaderWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F221EDED56DFCEEC4D70AEB5 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -78,11 +104,13 @@
 		03178A9E9584E64FDF035365 /* Design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Design.swift; sourceTree = "<group>"; };
 		0A7FC2DF5196FE9197818ADC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1CC173A684EEC59AAE8A2F87 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		1D75231C9C3D693CD55D1472 /* MeReaderWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeReaderWidget.swift; sourceTree = "<group>"; };
 		223C01F46F79AB7A513057C5 /* ReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderView.swift; sourceTree = "<group>"; };
 		22BF8801DD840379787501C8 /* KokoroSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KokoroSettings.swift; sourceTree = "<group>"; };
 		3817DA1683C977F2E838EB25 /* MeReaderMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MeReaderMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B8EF3416B415A67847AD88B /* MeReader.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = MeReader.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3E3669E54A5EF4543450D629 /* MeReaderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeReaderApp.swift; sourceTree = "<group>"; };
+		40025E26225FD73A045B3EFE /* MeReaderWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = MeReaderWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		427FBB078CA3E28B02DA609E /* KokoroEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KokoroEngine.swift; sourceTree = "<group>"; };
 		4772B4D2A276001A66E3DA31 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		4D2B2B981B5076F1C6BD4E06 /* EPUBParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBParser.swift; sourceTree = "<group>"; };
@@ -94,6 +122,7 @@
 		9C875B1A4A4E0BC63DBEF322 /* Library.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Library.swift; sourceTree = "<group>"; };
 		A1A8A7174BF86BB254A4B6C3 /* AudioRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRenderer.swift; sourceTree = "<group>"; };
 		A4478069119F2836CD8C0A96 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		AF18B522E1E84E3269FED725 /* WidgetBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridgeApp.swift; sourceTree = "<group>"; };
 		B9A18503C9E89934AFA78748 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
 		BD35BCB19C05CCAB5615CFE6 /* SpeechFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechFilter.swift; sourceTree = "<group>"; };
 		C771F19E6EAC2F865346E12A /* AppExpiry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppExpiry.swift; sourceTree = "<group>"; };
@@ -103,6 +132,7 @@
 		D75B9673E8AC20A89CB74C2D /* ChapterParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterParser.swift; sourceTree = "<group>"; };
 		DE4E16781CF672EA860CE9C3 /* Narrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Narrator.swift; sourceTree = "<group>"; };
 		E39A95012090E03F963F9B36 /* HTMLTokenizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTMLTokenizer.swift; sourceTree = "<group>"; };
+		E44DC8C078DEC39632BD66A7 /* WidgetBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetBridge.swift; sourceTree = "<group>"; };
 		EA788BF4EF286AB51955B6A6 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -174,6 +204,7 @@
 				C771F19E6EAC2F865346E12A /* AppExpiry.swift */,
 				B9A18503C9E89934AFA78748 /* CarPlaySceneDelegate.swift */,
 				C9F714307262C5313C125FD1 /* MeReaderIntents.swift */,
+				AF18B522E1E84E3269FED725 /* WidgetBridgeApp.swift */,
 			);
 			path = iOS;
 			sourceTree = "<group>";
@@ -204,6 +235,22 @@
 			path = Audio;
 			sourceTree = "<group>";
 		};
+		8B0665D841CB9DBB39009ED3 /* Widget */ = {
+			isa = PBXGroup;
+			children = (
+				1D75231C9C3D693CD55D1472 /* MeReaderWidget.swift */,
+			);
+			path = Widget;
+			sourceTree = "<group>";
+		};
+		A4CDB6320C5081F0C6A70339 /* WidgetShared */ = {
+			isa = PBXGroup;
+			children = (
+				E44DC8C078DEC39632BD66A7 /* WidgetBridge.swift */,
+			);
+			path = WidgetShared;
+			sourceTree = "<group>";
+		};
 		BD19BE7977E3FC6CFB75F287 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
@@ -231,6 +278,8 @@
 				3725F6C3C0FB72A67DACC844 /* iOS */,
 				E2F725DD7BEEBAC0A099A34A /* macOS */,
 				15F803C1B499302945130297 /* Shared */,
+				8B0665D841CB9DBB39009ED3 /* Widget */,
+				A4CDB6320C5081F0C6A70339 /* WidgetShared */,
 				F3C7C9BE7C0FBEFC2001169A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -240,6 +289,7 @@
 			children = (
 				3B8EF3416B415A67847AD88B /* MeReader.app */,
 				3817DA1683C977F2E838EB25 /* MeReaderMac.app */,
+				40025E26225FD73A045B3EFE /* MeReaderWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -254,10 +304,12 @@
 				EC7C1443EABD31F3A7DD2A40 /* Sources */,
 				2DAFCF25E102943F887FDF1F /* Resources */,
 				A92AFDDED05D590F867004CE /* Frameworks */,
+				87595CBBD65D8C4AF6AEB020 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				DF45BE24254F47EAC4BFEB07 /* PBXTargetDependency */,
 			);
 			name = MeReader;
 			packageProductDependencies = (
@@ -291,6 +343,23 @@
 			productReference = 3817DA1683C977F2E838EB25 /* MeReaderMac.app */;
 			productType = "com.apple.product-type.application";
 		};
+		CBF1DFA0F1AA53209FADB299 /* MeReaderWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 164F0EED59CF459DC839FAE4 /* Build configuration list for PBXNativeTarget "MeReaderWidget" */;
+			buildPhases = (
+				AA51665DE7A6175071D01EBB /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MeReaderWidget;
+			packageProductDependencies = (
+			);
+			productName = MeReaderWidget;
+			productReference = 40025E26225FD73A045B3EFE /* MeReaderWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -305,6 +374,10 @@
 						ProvisioningStyle = Automatic;
 					};
 					CB75DC4EE6C21893B5847F7F = {
+						DevelopmentTeam = QM2CU9BH99;
+						ProvisioningStyle = Automatic;
+					};
+					CBF1DFA0F1AA53209FADB299 = {
 						DevelopmentTeam = QM2CU9BH99;
 						ProvisioningStyle = Automatic;
 					};
@@ -331,6 +404,7 @@
 			projectRoot = "";
 			targets = (
 				92C134CA21D738416C5CC09E /* MeReader */,
+				CBF1DFA0F1AA53209FADB299 /* MeReaderWidget */,
 				CB75DC4EE6C21893B5847F7F /* MeReaderMac */,
 			);
 		};
@@ -386,6 +460,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA51665DE7A6175071D01EBB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E6627F934DECD91AB7A1C661 /* MeReaderWidget.swift in Sources */,
+				E96DAC1F5500F19D7A8E2A1A /* WidgetBridge.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EC7C1443EABD31F3A7DD2A40 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -410,10 +493,20 @@
 				25A149B06DE58F65976A4967 /* SettingsView.swift in Sources */,
 				716569590A4D25365EB791ED /* SpeechFilter.swift in Sources */,
 				258AB56F977272A25E10755E /* Theme.swift in Sources */,
+				0E7B59BE842A1681DC553E66 /* WidgetBridge.swift in Sources */,
+				2226BCC29E3D89C3C57AA676 /* WidgetBridgeApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		DF45BE24254F47EAC4BFEB07 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CBF1DFA0F1AA53209FADB299 /* MeReaderWidget */;
+			targetProxy = 68714FAB233EA3F0757E76D9 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		3979589247D4E871496E88B9 /* Debug */ = {
@@ -512,10 +605,30 @@
 			};
 			name = Release;
 		};
+		8E42405F117F278A0A1735CF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Widget/MeReaderWidget.entitlements;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Widget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = idk.Narrate.widget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) WIDGET_EXTENSION";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		C5864F1CBA60AFB40EF289F9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = iOS/MeReader.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "iOS/MeReader-Simulator.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = iOS/Info.plist;
@@ -533,6 +646,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = iOS/MeReader.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = "iOS/MeReader-Simulator.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = iOS/Info.plist;
@@ -542,6 +656,25 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = idk.Narrate;
 				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D51C5B44B031172F29DECBE9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Widget/MeReaderWidget.entitlements;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Widget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = idk.Narrate.widget;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) WIDGET_EXTENSION";
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -618,6 +751,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		164F0EED59CF459DC839FAE4 /* Build configuration list for PBXNativeTarget "MeReaderWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D51C5B44B031172F29DECBE9 /* Debug */,
+				8E42405F117F278A0A1735CF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		89383CD3390AC43DE8E67223 /* Build configuration list for PBXNativeTarget "MeReaderMac" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

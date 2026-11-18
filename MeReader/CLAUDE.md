@@ -23,6 +23,7 @@ Same neutrals as the dashboard's dark theme (`Palette` in `Shared/Views/Design.s
 - `Shared/Sync/ProgressStore.swift`: progress and shared books, stored locally and in `iCloud Drive/Narrate`. There is no server.
 - `Shared/Views`: library, reader, mini player, Now Playing, settings, theme.
 - `iOS/`: CarPlay scene (it needs Apple's CarPlay audio entitlement, which isn't granted yet), Siri/App Intents ("continue listening in MeReader"), and `AppExpiry.swift` (warns before the 7-day free-signing expiry).
+- `Widget/` + `WidgetShared/`: the "Continue listening" widget (Home Screen, StandBy, and the CarPlay widget screen on iOS 26, which needs no CarPlay entitlement). The app writes a small snapshot into the App Group `group.idk.Narrate` (`iOS/WidgetBridgeApp.swift`); the widget reads it. Its button is `TogglePlaybackIntent`, an audio intent that runs inside the app. Works with the free developer account.
 - `macOS/`: menu bar app (no Dock icon at all), and `KokoroEngine` + `AudioRenderer`. These render upcoming chapters of the 3 most recent books to `iCloud Drive/Narrate/Audio/<bookID>/<chapter>.m4a` + `.json` word timings. The 327 MB Kokoro model is downloaded from Hugging Face into Application Support on first use and is not in the repo. `Resources/kokoro-voices.npz` is.
 
 ## Car behavior (deliberate; keep it)
