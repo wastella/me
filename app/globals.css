@@ -751,3 +751,6 @@ body.memento-open { overflow: hidden; }
 .memento-list b { font-weight: 550; overflow-wrap: anywhere; }
 .memento-list span { font-size: 12.5px; color: var(--muted); }
 @keyframes memento-in { from { opacity: 0; } }
+.memento-buttons .btn { transition: transform .08s ease-out, filter .12s ease-out; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.memento-buttons .btn:hover { filter: brightness(1.12); }
+.memento-buttons .btn:active { transform: scale(.96); filter: brightness(.88); }

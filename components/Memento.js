@@ -40,6 +40,7 @@ export default function MementoOverlay() {
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState('');
   const [typed, setTyped] = useState('');
+  const [gone, setGone] = useState('');   // the reminder you just answered, hidden straight away
   const key = m ? m.id + m.fired_at : '';
 
   useEffect(() => {
@@ -54,13 +55,15 @@ export default function MementoOverlay() {
     return () => { clearInterval(t); document.body.classList.remove('memento-open'); };
   }, [key]); // eslint-disable-line
 
-  if (!m) return null;
+  if (!m || gone === key) return null;
   const locked = left > 0;
   const answer = async (action) => {
     if (busy) return;
-    setBusy(true); setProblem('');
+    setProblem('');
+    // Done / Not yet clear the screen at once; the answer is sent behind the scenes.
+    if (action !== 'skip') setGone(key); else setBusy(true);
     try { await api('/api/memento', { method: 'PATCH', body: { id: m.id, action } }); await reload(); }
-    catch (e) { setProblem(e.status === 423 ? 'Not until the time is up.' : 'Couldn’t reach Me. Try again.'); }
+    catch (e) { setGone(''); setProblem(e.status === 423 ? 'Not until the time is up.' : 'Couldn’t reach Me. Try again.'); }
     setBusy(false);
   };
   const total = m.lock_seconds * 1000;

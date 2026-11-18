@@ -101,6 +101,36 @@ final class Client {
     }
 }
 
+// MARK: - Buttons that react the instant you touch them
+struct MeButtonStyle: ButtonStyle {
+    var primary = false
+    var large = false
+    func makeBody(configuration: Configuration) -> some View { Face(configuration: configuration, primary: primary, large: large) }
+    struct Face: View {
+        let configuration: Configuration
+        let primary: Bool
+        let large: Bool
+        @State private var hover = false
+        @Environment(\.isEnabled) private var enabled
+        var body: some View {
+            let pressed = configuration.isPressed
+            configuration.label
+                .font(.system(size: large ? 17 : 13, weight: primary ? .semibold : .medium))
+                .foregroundColor(primary ? .black : Look.text)
+                .padding(.horizontal, large ? 0 : 13).frame(height: large ? 48 : 30).frame(minWidth: large ? 190 : 0)
+                .background(primary ? Look.amber : (hover ? Color(white: 0.2) : Look.panel))
+                .brightness(pressed ? -0.12 : (hover && primary ? 0.06 : 0))
+                .clipShape(RoundedRectangle(cornerRadius: large ? 12 : 8, style: .continuous))
+                .scaleEffect(pressed ? 0.96 : 1)
+                .opacity(enabled ? 1 : 0.5)
+                .contentShape(Rectangle())
+                .onHover { hover = $0 }
+                .animation(.easeOut(duration: 0.08), value: pressed)
+                .animation(.easeOut(duration: 0.12), value: hover)
+        }
+    }
+}
+
 // MARK: - The lock screen
 final class LockModel: ObservableObject {
     @Published var text = ""
@@ -149,12 +179,9 @@ struct LockView: View {
                 } else if controls {
                     Text("Did you do it?").font(.system(size: 22, weight: .medium)).foregroundColor(Look.muted)
                     HStack(spacing: 14) {
-                        Button { model.onAnswer("snooze") } label: { Text("Not yet · 10 min").frame(width: 190, height: 48) }
-                            .buttonStyle(.plain).foregroundColor(Look.text).background(Look.panel).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        Button { model.onAnswer("done") } label: { Text("Done").fontWeight(.semibold).frame(width: 190, height: 48) }
-                            .buttonStyle(.plain).foregroundColor(.black).background(Look.amber).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                            .keyboardShortcut(.defaultAction)
-                    }.font(.system(size: 17)).padding(.top, 22).disabled(model.sending)
+                        Button("Not yet · 10 min") { model.onAnswer("snooze") }.buttonStyle(MeButtonStyle(large: true))
+                        Button("Done") { model.onAnswer("done") }.buttonStyle(MeButtonStyle(primary: true, large: true)).keyboardShortcut(.defaultAction)
+                    }.padding(.top, 22)
                     if !model.problem.isEmpty { Text(model.problem).font(.system(size: 14)).foregroundColor(Look.muted).padding(.top, 14) }
                 } else {
                     Text("Answer on your main screen.").font(.system(size: 17)).foregroundColor(Look.muted)
@@ -169,6 +196,7 @@ struct LockView: View {
                             .background(Look.panel.opacity(0.6)).clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
                             .focused($typing).disableAutocorrection(true)
                             .onChange(of: model.typed) { _, v in if v.trimmingCharacters(in: .whitespaces).lowercased() == emergencyPhrase.lowercased() { model.onAnswer("skip") } }
+                        if !model.problem.isEmpty { Text(model.problem).font(.system(size: 12)).foregroundColor(Look.muted) }
                     }
                 }
             }.padding(44)
@@ -261,7 +289,15 @@ final class LockController {
     }
     private func send(_ action: String) {
         guard let m = current, !model.sending else { return }
-        model.sending = true; model.problem = ""
+        if action != "skip" {
+            // Done / Not yet: the screen clears the instant you click. If the answer
+            // doesn't reach Me (no internet), the reminder simply comes back.
+            close()
+            answer(m, action) { _ in }
+            return
+        }
+        // The emergency exit has to be confirmed by Me before the lock lets go.
+        model.sending = true; model.problem = "Unlocking…"
         answer(m, action) { [weak self] ok in
             guard let self, self.current?.id == m.id else { return }
             self.model.sending = false
@@ -332,7 +368,7 @@ struct HomeView: View {
                 Button(model.connected ? "Change Key…" : "Set Key…") { model.setKey() }
                 Spacer()
                 Button("Quit") { model.quit() }
-            }
+            }.buttonStyle(MeButtonStyle())
         }
         .padding(22).frame(width: 460).background(Look.bg).preferredColorScheme(.dark)
     }
