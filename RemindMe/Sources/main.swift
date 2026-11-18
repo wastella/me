@@ -341,6 +341,7 @@ final class HomeModel: ObservableObject {
     var test: () -> Void = {}
     var toggleLogin: () -> Void = {}
     var quit: () -> Void = {}
+    var onSize: (CGSize) -> Void = { _ in }
 }
 
 struct HomeView: View {
@@ -397,14 +398,16 @@ struct HomeView: View {
             Toggle("Open at Login", isOn: Binding(get: { model.openAtLogin }, set: { _ in model.toggleLogin() }))
                 .toggleStyle(.checkbox).font(.system(size: 13)).foregroundColor(Look.text)
             HStack(spacing: 8) {
-                Button("Test on Every Mac (15 seconds)") { model.test() }
+                Button("Test on Every Mac") { model.test() }
                 Button(model.connected ? "Change Key…" : "Set Key…") { model.setKey() }
                 Spacer()
                 Button("Quit") { model.quit() }
             }.buttonStyle(MeButtonStyle())
             if !model.note.isEmpty { Text(model.note).font(.system(size: 12)).foregroundColor(Look.muted) }
         }
-        .padding(22).frame(width: 460).background(Look.bg).preferredColorScheme(.dark)
+        .padding(22).frame(width: 460)
+        .background(GeometryReader { g in Color.clear.onAppear { model.onSize(g.size) }.onChange(of: g.size) { _, n in model.onSize(n) } })
+        .background(Look.bg).preferredColorScheme(.dark)
     }
 }
 
@@ -467,13 +470,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     func showHome() {
         if homeWindow == nil {
-            let w = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .fullSizeContentView], backing: .buffered, defer: false)
+            let w = NSWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
             w.title = "RemindMe"; w.titlebarAppearsTransparent = true; w.titleVisibility = .hidden
             w.isReleasedWhenClosed = false; w.backgroundColor = NSColor(red: 0x0c / 255, green: 0x0c / 255, blue: 0x0d / 255, alpha: 1)
-            let host = NSHostingController(rootView: HomeView(model: home))
-            host.sizingOptions = [.preferredContentSize]   // the window grows and shrinks with what it shows
-            w.contentViewController = host
-            w.center()
+            w.contentView = NSHostingView(rootView: HomeView(model: home))
+            w.setContentSize(w.contentView!.fittingSize); w.center()
+            // The window follows the height of what it shows (resized by hand: letting
+            // AppKit do it automatically crashed during layout).
+            home.onSize = { [weak w] size in
+                DispatchQueue.main.async {
+                    guard let w, size.height > 50, abs(w.contentLayoutRect.height - size.height) > 1 else { return }
+                    var f = w.frameRect(forContentRect: NSRect(origin: .zero, size: NSSize(width: 460, height: size.height)))
+                    f.origin = NSPoint(x: w.frame.minX, y: w.frame.maxY - f.height)   // keep the top edge where it is
+                    w.setFrame(f, display: true)
+                }
+            }
             homeWindow = w
         }
         NSApp.activate(ignoringOtherApps: true)
@@ -523,7 +534,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Open RemindMe", action: #selector(openHome), keyEquivalent: "").target = self
-        menu.addItem(withTitle: "Test on Every Mac (15 seconds)", action: #selector(testLock), keyEquivalent: "").target = self
+        menu.addItem(withTitle: "Test on Every Mac", action: #selector(testLock), keyEquivalent: "").target = self
         let login = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: ""); login.target = self
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
