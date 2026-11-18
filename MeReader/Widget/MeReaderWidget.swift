@@ -136,7 +136,7 @@ struct MeReaderControlsWidget: Widget {
         }
         .configurationDisplayName("Speed and book")
         .description("Change the narration speed, or switch to your next book.")
-        .supportedFamilies([.systemSmall])
+        .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
 
@@ -148,32 +148,62 @@ struct ControlsView: View {
         return (r == r.rounded() ? String(Int(r)) : String(format: "%g", r)) + "×"
     }
 
+    @Environment(\.widgetFamily) private var family
+
     var body: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 0) {
-                step("minus", "Slower", SlowerIntent())
-                Text(rateText)
-                    .font(.system(size: 22, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .contentTransition(.numericText())
-                step("plus", "Faster", FasterIntent())
-            }
-            Button(intent: NextBookIntent()) {
-                HStack(spacing: 6) {
-                    Image(systemName: "forward.end.fill").font(.system(size: 12, weight: .bold))
-                    Text(snapshot?.nextBookTitle ?? "Only one book")
-                        .font(.system(size: 13, weight: .medium)).lineLimit(1)
+        if family == .systemMedium {
+            // Full width, same height as the wide "Continue listening" widget, so the two stack.
+            HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 8) {
+                    label("SPEED")
+                    speedRow.frame(maxHeight: .infinity)
                 }
-                .foregroundStyle(snapshot?.nextBookTitle == nil ? muted : .white)
-                .padding(.horizontal, 10)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background(Color(hex: 0x1c1c1f), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 8) {
+                    label("NEXT BOOK")
+                    nextBook(height: .infinity)
+                }
+                .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.plain)
-            .disabled(snapshot?.nextBookTitle == nil)
-            .accessibilityLabel("Next book" + (snapshot?.nextBookTitle.map { ": \($0)" } ?? ""))
+        } else {
+            VStack(spacing: 10) {
+                speedRow
+                nextBook(height: 44)
+            }
         }
+    }
+
+    private func label(_ text: String) -> some View {
+        Text(text).font(.system(size: 10, weight: .bold)).tracking(1.2).foregroundStyle(accent)
+    }
+
+    private var speedRow: some View {
+        HStack(spacing: 0) {
+            step("minus", "Slower", SlowerIntent())
+            Text(rateText)
+                .font(.system(size: 22, weight: .semibold).monospacedDigit())
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .contentTransition(.numericText())
+            step("plus", "Faster", FasterIntent())
+        }
+    }
+
+    private func nextBook(height: CGFloat) -> some View {
+        Button(intent: NextBookIntent()) {
+            HStack(spacing: 6) {
+                Image(systemName: "forward.end.fill").font(.system(size: 12, weight: .bold))
+                Text(snapshot?.nextBookTitle ?? "Only one book")
+                    .font(.system(size: 13, weight: .medium)).lineLimit(height == .infinity ? 2 : 1)
+            }
+            .foregroundStyle(snapshot?.nextBookTitle == nil ? muted : .white)
+            .padding(.horizontal, 10)
+            .frame(maxWidth: .infinity, minHeight: 44, maxHeight: height == .infinity ? .infinity : 44)
+            .background(Color(hex: 0x1c1c1f), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(snapshot?.nextBookTitle == nil)
+        .accessibilityLabel("Next book" + (snapshot?.nextBookTitle.map { ": \($0)" } ?? ""))
     }
 
     private func step(_ symbol: String, _ label: String, _ intent: some AppIntent) -> some View {
